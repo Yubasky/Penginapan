@@ -28,10 +28,13 @@ class Auth extends AppBase
             if (! $this->tokenOk()) {
                 return redirect()->back()->with('error', 'Sesi form kedaluwarsa, coba lagi.');
             }
-            $email = strtolower(trim((string) $this->request->getPost('email')));
-            $u     = (new UserModel())->where('email', $email)->first();
+            $login = strtolower(trim((string) $this->request->getPost('email')));
+            $u     = (new UserModel())->groupStart()
+                ->where('email', $login)
+                ->orWhere('nama', $login)
+                ->groupEnd()->first();
             if (! $u || ! password_verify((string) $this->request->getPost('password'), $u['password_hash'])) {
-                return redirect()->back()->withInput()->with('error', 'Email atau password salah.');
+                return redirect()->back()->withInput()->with('error', 'Email/username atau password salah.');
             }
 
             return $this->masukkan($u);
