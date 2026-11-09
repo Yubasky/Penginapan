@@ -11,7 +11,7 @@
 </head>
 <body class="adm">
 <?php
-$menu = ['admin' => 'Ringkasan', 'admin/hotel' => 'Hotel', 'admin/pesan' => 'Pesan masuk', 'admin/ulasan' => 'Ulasan', 'admin/pengguna' => 'Pengguna', 'admin/kuliner' => 'Integrasi kuliner', 'admin/apikey' => 'Kunci API'];
+$menu = ['admin' => 'Ringkasan', 'admin/hotel' => 'Hotel', 'admin/pesan' => 'Pesan masuk', 'admin/ulasan' => 'Ulasan', 'admin/pengguna' => 'Pengguna', 'admin/kuliner' => 'Integrasi kuliner'];
 $now  = trim(service('uri')->getPath(), '/');
 ?>
 <aside class="adm__side">

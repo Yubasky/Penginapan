@@ -36,11 +36,8 @@ abstract class AppBase extends BaseController
 
     protected function butuhAdmin(): ?RedirectResponse
     {
-        if ($r = $this->butuhLogin()) {
-            return $r;
-        }
         if (($this->user()['role'] ?? '') !== 'admin') {
-            return redirect()->to(site_url('/'))->with('error', 'Halaman itu khusus admin.');
+            return redirect()->to(site_url('admin'))->with('error', 'Silakan masuk sebagai admin terlebih dahulu.');
         }
 
         return null;

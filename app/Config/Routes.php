@@ -22,6 +22,7 @@ $routes->match(['get', 'post'], 'masuk', 'Auth::masuk');
 $routes->match(['get', 'post'], 'daftar', 'Auth::daftar');
 $routes->get('keluar', 'Auth::keluar');
 $routes->get('akun', 'Akun::index');
+$routes->post('akun/update', 'Akun::update');
 
 // ---- Aksi pengunjung ----
 $routes->post('favorit/(:num)', 'Interaksi::favorit/$1');
@@ -30,7 +31,7 @@ $routes->post('penginapan/(:num)/pesan', 'Interaksi::pesan/$1');
 
 // ---- Admin ----
 $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static function (RouteCollection $routes) {
-    $routes->get('/', 'Dashboard::index');
+    $routes->match(['get', 'post'], '/', 'Dashboard::index');
 
     $routes->get('hotel', 'Hotels::index');
     $routes->get('hotel/baru', 'Hotels::baru');

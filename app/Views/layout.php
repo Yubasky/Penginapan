@@ -22,11 +22,10 @@
             <a href="<?= site_url('peta') ?>">Peta</a>
             <a href="<?= site_url('kuliner') ?>">Kuliner</a>
             <a href="<?= site_url('bandingkan') ?>">Bandingkan<?php if ($nb = count(bandingkan_ids())): ?> <b class="badge"><?= $nb ?></b><?php endif; ?></a>
-            <a href="<?= site_url('tentang') ?>">API</a>
             <?php $u = session('user'); ?>
             <?php if ($u): ?>
                 <?php if (($u['role'] ?? '') === 'admin'): ?><a href="<?= site_url('admin') ?>">Admin</a><?php endif; ?>
-                <a href="<?= site_url('akun') ?>">Hai, <?= esc(explode(' ', $u['nama'])[0]) ?></a>
+                <a href="<?= site_url('akun') ?>">Profil</a>
                 <a href="<?= site_url('keluar') ?>">Keluar</a>
             <?php else: ?>
                 <a class="nav__cta" href="<?= site_url('masuk') ?>">Masuk</a>
@@ -53,7 +52,6 @@
             <a href="<?= site_url('penginapan?sarapan=ya') ?>">Dengan sarapan</a>
             <a href="<?= site_url('peta') ?>">Peta</a>
             <a href="<?= site_url('kuliner') ?>">Kuliner</a>
-            <a href="<?= site_url('tentang') ?>">API untuk kelompok lain</a>
         </div>
         <div>
             <p class="foot__h">Sumber data</p>
