@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('assets/css/app.css') ?>">
+    <?= $this->renderSection('head') ?>
 </head>
 <body>
 <header class="nav">
@@ -18,11 +19,26 @@
         <nav class="nav__links" id="menu">
             <a href="<?= site_url('/') ?>">Beranda</a>
             <a href="<?= site_url('penginapan') ?>">Penginapan</a>
-            <a href="<?= site_url('tentang') ?>">Tentang &amp; API</a>
+            <a href="<?= site_url('peta') ?>">Peta</a>
+            <a href="<?= site_url('kuliner') ?>">Kuliner</a>
+            <a href="<?= site_url('bandingkan') ?>">Bandingkan<?php if ($nb = count(bandingkan_ids())): ?> <b class="badge"><?= $nb ?></b><?php endif; ?></a>
+            <a href="<?= site_url('tentang') ?>">API</a>
+            <?php $u = session('user'); ?>
+            <?php if ($u): ?>
+                <?php if (($u['role'] ?? '') === 'admin'): ?><a href="<?= site_url('admin') ?>">Admin</a><?php endif; ?>
+                <a href="<?= site_url('akun') ?>">Hai, <?= esc(explode(' ', $u['nama'])[0]) ?></a>
+                <a href="<?= site_url('keluar') ?>">Keluar</a>
+            <?php else: ?>
+                <a class="nav__cta" href="<?= site_url('masuk') ?>">Masuk</a>
+            <?php endif; ?>
         </nav>
     </div>
 </header>
 
+<?php $ok = session()->getFlashdata('ok'); $er = session()->getFlashdata('error'); ?>
+<?php if ($ok || $er): ?>
+    <div class="wrap"><div class="flash <?= $er ? 'flash--err' : 'flash--ok' ?>" role="status"><?= esc($er ?: $ok) ?></div></div>
+<?php endif; ?>
 <main><?= $this->renderSection('content') ?></main>
 
 <footer class="foot">
@@ -35,7 +51,9 @@
             <p class="foot__h">Jelajah</p>
             <a href="<?= site_url('penginapan') ?>">Semua penginapan</a>
             <a href="<?= site_url('penginapan?sarapan=ya') ?>">Dengan sarapan</a>
-            <a href="<?= site_url('api/hotels') ?>">API JSON</a>
+            <a href="<?= site_url('peta') ?>">Peta</a>
+            <a href="<?= site_url('kuliner') ?>">Kuliner</a>
+            <a href="<?= site_url('tentang') ?>">API untuk kelompok lain</a>
         </div>
         <div>
             <p class="foot__h">Sumber data</p>
@@ -45,5 +63,6 @@
     <div class="wrap foot__copy">© <?= date('Y') ?> Singgah Medan · Proyek kelompok</div>
 </footer>
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+<?= $this->renderSection('scripts') ?>
 </body>
 </html>

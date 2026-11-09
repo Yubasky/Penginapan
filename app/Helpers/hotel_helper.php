@@ -3,7 +3,7 @@
 if (! function_exists('hue_hotel')) {
     function hue_hotel(array $h): int
     {
-        return (crc32($h["nama"]) % 40) + 155; // rentang hijau-toska
+        return (crc32($h['nama']) % 40) + 155; // rentang hijau-toska
     }
 }
 
@@ -35,9 +35,67 @@ if (! function_exists('peta_url')) {
     }
 }
 
+if (! function_exists('peta_embed_url')) {
+    function peta_embed_url(array $h): string
+    {
+        return 'https://www.google.com/maps?q=' . rawurlencode($h['nama'] . ', ' . $h['alamat'] . ', Medan') . '&output=embed';
+    }
+}
+
+if (! function_exists('token_field')) {
+    /** Input tersembunyi anti-CSRF; dicek oleh AppBase::tokenOk(). */
+    function token_field(): string
+    {
+        $s = session();
+        if (! $s->get('_token')) {
+            $s->set('_token', bin2hex(random_bytes(16)));
+        }
+        return '<input type="hidden" name="_token" value="' . esc((string) $s->get('_token'), 'attr') . '">';
+    }
+}
+
+if (! function_exists('tgl_id')) {
+    function tgl_id(?string $ts): string
+    {
+        if (! $ts) {
+            return '-';
+        }
+        $bln = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $t   = strtotime($ts);
+
+        return date('j', $t) . ' ' . $bln[(int) date('n', $t)] . ' ' . date('Y', $t);
+    }
+}
+
+if (! function_exists('favorit_ids')) {
+    function favorit_ids(): array
+    {
+        static $ids = null;
+        if ($ids !== null) {
+            return $ids;
+        }
+        $ids = [];
+        $u   = session('user');
+        if ($u) {
+            $rows = db_connect()->table('favorites')->select('hotel_id')->where('user_id', (int) $u['id'])->get()->getResultArray();
+            $ids  = array_map('intval', array_column($rows, 'hotel_id'));
+        }
+        return $ids;
+    }
+}
+
+if (! function_exists('bandingkan_ids')) {
+    function bandingkan_ids(): array
+    {
+        return array_map('intval', (array) (session('bandingkan') ?? []));
+    }
+}
+
 if (! function_exists('hotel_card')) {
     function hotel_card(array $h): string
     {
+        $fav = in_array((int) $h['id'], favorit_ids(), true);
+        $cmp = in_array((int) $h['id'], bandingkan_ids(), true);
         ob_start(); ?>
         <article class="card">
             <a class="card__cover" href="<?= site_url('penginapan/' . $h['slug']) ?>" style="--h: <?= hue_hotel($h) ?>" aria-label="<?= esc($h['nama'], 'attr') ?>">
@@ -46,6 +104,10 @@ if (! function_exists('hotel_card')) {
                     <span class="chip chip--gold"><?= $h['sarapan'] === 'All-in' ? 'All-in' : 'Sarapan' ?></span>
                 <?php endif; ?>
             </a>
+            <form class="fav" method="post" action="<?= site_url('favorit/' . $h['id']) ?>">
+                <?= token_field() ?>
+                <button class="fav__btn <?= $fav ? 'is-on' : '' ?>" type="submit" title="<?= $fav ? 'Hapus dari favorit' : 'Simpan ke favorit' ?>" aria-label="Favorit"><?= $fav ? '♥' : '♡' ?></button>
+            </form>
             <div class="card__body">
                 <?php if (! empty($h['kecamatan'])): ?><p class="eyebrow"><?= esc($h['kecamatan']) ?></p><?php endif; ?>
                 <h3><a href="<?= site_url('penginapan/' . $h['slug']) ?>"><?= esc($h['nama']) ?></a></h3>
@@ -55,6 +117,7 @@ if (! function_exists('hotel_card')) {
                     <?php if ($h['jumlah_ulasan'] !== null): ?>
                         <span class="muted"><?= number_format((int) $h['jumlah_ulasan'], 0, ',', '.') ?> ulasan</span>
                     <?php endif; ?>
+                    <a class="cmp <?= $cmp ? 'is-on' : '' ?>" href="<?= site_url('bandingkan/toggle/' . $h['id']) ?>"><?= $cmp ? '✓ Dipilih' : '⇄ Bandingkan' ?></a>
                 </div>
             </div>
         </article>
@@ -98,5 +161,23 @@ if (! function_exists('paginasi')) {
         }
 
         return $html . '</nav>';
+    }
+}
+
+if (! function_exists('kuliner_card')) {
+    function kuliner_card(array $k): string
+    {
+        ob_start(); ?>
+        <article class="food__item">
+            <?php if (! empty($k['foto'])): ?><img src="<?= esc($k['foto'], 'attr') ?>" alt="" loading="lazy"><?php endif; ?>
+            <div>
+                <h3><?php if (! empty($k['url'])): ?><a href="<?= esc($k['url'], 'attr') ?>" target="_blank" rel="noopener"><?= esc($k['nama']) ?></a><?php else: ?><?= esc($k['nama']) ?><?php endif; ?></h3>
+                <p class="muted"><?= esc(trim(($k['kategori'] ?? '') . (! empty($k['harga']) ? ' · ' . $k['harga'] : ''), ' ·')) ?></p>
+                <?php if (! empty($k['alamat'])): ?><p class="small"><?= esc($k['alamat']) ?></p><?php endif; ?>
+                <?php if (isset($k['rating']) && $k['rating'] !== null && $k['rating'] !== ''): ?><p><?= rating_label($k['rating']) ?></p><?php endif; ?>
+            </div>
+        </article>
+        <?php
+        return (string) ob_get_clean();
     }
 }

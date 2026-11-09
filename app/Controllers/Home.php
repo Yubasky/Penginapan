@@ -4,11 +4,10 @@ namespace App\Controllers;
 
 use App\Models\HotelModel;
 
-class Home extends BaseController
+class Home extends AppBase
 {
     public function index()
     {
-        helper('hotel');
         $m = new HotelModel();
 
         return view('home', [

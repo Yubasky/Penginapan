@@ -1,38 +1,51 @@
 # Singgah Medan — web penginapan Medan (CodeIgniter 4 + PostgreSQL)
 
-Isi folder ini adalah **file tambahan** yang ditimpa/ditaruh di atas proyek CI4 baru.
+## Pasang (file ini ditimpa ke atas proyek CI4 baru)
+1. `composer create-project codeigniter4/appstarter singgah-medan`
+2. Salin isi paket ini (`app/`, `public/`, `data/`, `env.contoh`) ke dalamnya, setuju menimpa `app/Config/Routes.php`.
+3. `cp env.contoh .env` lalu isi password PostgreSQL.
 
-## 1. Siapkan proyek CI4 (Ubuntu)
+## Database (urutan penting)
 ```bash
-sudo apt install php8.3-intl php8.3-pgsql php8.3-curl php8.3-mbstring php8.3-xml composer
-composer create-project codeigniter4/appstarter singgah-medan
-cd singgah-medan
+sudo -u postgres createdb singgah_medan
+sudo -u postgres psql -d singgah_medan -f data/hotels.sql   # 240 hotel
+sudo -u postgres psql -d singgah_medan -f data/fitur.sql    # akun, ulasan, favorit, pesan, kunci API, kuliner
 ```
-Salin seluruh isi folder ini (`app/`, `public/`, `data/`, `README.md`) ke dalam `singgah-medan/` dan setuju menimpa `app/Config/Routes.php`.
-Salin `env.contoh` menjadi `.env`, lalu isi password PostgreSQL.
+Di pgAdmin: Query Tool -> buka file -> F5 (juga berurutan). Jangan jalankan `hotels.sql` lagi setelah web dipakai (isi tabel hotel direset).
 
-## 2. Masukkan data ke PostgreSQL — pilih salah satu
-**A. Lewat pgAdmin**: buat database `singgah_medan` → klik kanan → *Query Tool* → buka `data/hotels.sql` → Run (F5). Tabel `hotels` + 240 baris langsung jadi.
-
-**B. Lewat terminal (Ubuntu)**: `psql -U postgres -c "CREATE DATABASE singgah_medan"` lalu `psql -U postgres -d singgah_medan -f data/hotels.sql`
-
-**C. Lewat CI4**: buat database kosong, lalu `php spark migrate` dan `php spark db:seed HotelSeeder` (membaca `data/hotels.csv`).
-
-## 3. Jalankan
+## Akun admin pertama
 ```bash
-php spark serve          # buka http://localhost:8080
+php spark akun:admin
 ```
-Di VS Code, ekstensi yang berguna: *PHP Intelephense*, *PostgreSQL* (opsional).
+Isi email, password, nama. Masuk lewat `/masuk`, lalu buka `/admin`.
 
-## Halaman
-- `/` beranda, `/penginapan` daftar + filter, `/penginapan/{slug}` detail, `/tentang` dokumentasi API.
+## Isi koordinat untuk halaman Peta (butuh internet, 5-10 menit)
+```bash
+php spark hotel:geocode
+```
+Hasil dari OpenStreetMap bisa meleset; koreksi lewat Admin -> Hotel -> Ubah.
+
+## Bagikan data + koordinat ke kelompok lain
+```bash
+php spark hotel:ekspor     # menulis data/hotels_koordinat.csv
+```
+Atau lewat API (pakai kunci): `GET /api/export/hotels?format=csv`.
+
+## Jalankan
+```bash
+php spark serve
+```
+
+## Fitur
+Pengunjung: cari & filter hotel, detail + peta, favorit, ulasan bintang, bandingkan 3 hotel, peta semua hotel, kuliner, pencarian gabungan (`/cari`), form tanya/pesan hotel, halaman akun.
+Admin (`/admin`): ringkasan, tambah/ubah/hapus hotel, impor CSV, pesan masuk + status, moderasi ulasan, kelola pengguna & peran, kunci API, integrasi kuliner.
 
 ## Tukar data dengan kelompok kuliner
-- **Kami memberi**: `GET /api/hotels`, `/api/hotels/{id}`, `/api/kecamatan` (JSON, CORS terbuka, read-only).
-- **Kami mengambil**: `GET {kuliner.apiUrl}/api/kuliner?kecamatan=...&limit=6` → tampil di halaman detail hotel (`app/Libraries/KulinerClient.php`).
-- Kunci penghubung = **nama kecamatan** (mis. "Medan Petisah"). Sepakati ejaan ini dengan kelompok kuliner; daftar resminya ada di `/api/kecamatan`.
-- Beda laptop: jalankan `php spark serve --host 0.0.0.0` dan pakai IP laptop di jaringan yang sama.
-- Nama field kuliner yang diterima: nama, kategori, alamat, rating, harga, foto, url (alias Inggris juga dibaca).
+- Kami memberi (publik): `GET /api/hotels`, `/api/hotels/{id}`, `/api/kecamatan`, `/api/kuliner`.
+- Kami memberi (pakai kunci, header `X-API-KEY`): `GET /api/export/hotels?format=csv|json`, `GET /api/export/ulasan`.
+- Mereka mengirim ke kami: `POST /api/kuliner/push` (kunci dibuat di Admin -> Kunci API).
+- Kami menarik dari mereka: isi `kuliner.apiUrl` di `.env`, lalu Admin -> Integrasi kuliner -> Sinkron, atau `php spark kuliner:sinkron`.
+- Kunci penghubung: nama kecamatan. Daftarnya di `/api/kecamatan`. Detail format JSON ada di halaman `/tentang`.
 
-## Catatan data
-- Sumber: Tripadvisor, 8 Nov 2026. Harga per malam tidak ada. 12 hotel alamatnya tidak memuat kecamatan (kolom `kecamatan` kosong).
+## Catatan keamanan
+Form memakai token anti-CSRF buatan sendiri, password di-hash, kunci API disimpan sebagai hash. Sebelum dipublikasikan ke internet: ubah `CI_ENVIRONMENT` ke `production` dan pakai HTTPS.

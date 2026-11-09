@@ -9,8 +9,12 @@ class HotelModel extends Model
     protected $table         = 'hotels';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = [];
-    protected $useTimestamps = false;
+    protected $allowedFields = [
+        'peringkat', 'halaman', 'nama', 'slug', 'rating', 'jumlah_ulasan', 'sarapan', 'reviewer',
+        'rating_ulasan', 'tanggal_ulasan', 'judul_ulasan', 'link_tripadvisor', 'alamat', 'kecamatan',
+        'latitude', 'longitude',
+    ];
+    protected $useTimestamps = true;
 
     /** Terapkan filter dari query string (dipakai web & API). */
     public function filtered(array $f): static

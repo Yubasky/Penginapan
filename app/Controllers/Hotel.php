@@ -4,13 +4,14 @@ namespace App\Controllers;
 
 use App\Libraries\KulinerClient;
 use App\Models\HotelModel;
+use App\Models\KulinerModel;
+use App\Models\ReviewModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
-class Hotel extends BaseController
+class Hotel extends AppBase
 {
     public function index()
     {
-        helper('hotel');
         $m = new HotelModel();
 
         $f = [
@@ -36,21 +37,35 @@ class Hotel extends BaseController
 
     public function show(string $slug)
     {
-        helper('hotel');
         $m     = new HotelModel();
         $hotel = $m->where('slug', $slug)->first();
         if (! $hotel) {
             throw PageNotFoundException::forPageNotFound();
         }
 
-        $kuliner = new KulinerClient();
+        $rm   = new ReviewModel();
+        $user = $this->user();
+
+        // Kuliner: pakai data hasil sinkron; kalau kosong, tanya API kelompok kuliner langsung.
+        $kuliner = [];
+        if (! empty($hotel['kecamatan'])) {
+            $kuliner = (new KulinerModel())->where('kecamatan', $hotel['kecamatan'])
+                ->orderBy('rating DESC NULLS LAST', '', false)->findAll(6);
+        }
+        $klien = new KulinerClient();
+        if (! $kuliner) {
+            $kuliner = $klien->byKecamatan($hotel['kecamatan'], 6);
+        }
 
         return view('hotels/show', [
-            'title'          => $hotel['nama'] . ' — Singgah Medan',
-            'h'              => $hotel,
-            'serupa'         => $m->serupa($hotel, 3),
-            'kulinerAktif'   => $kuliner->enabled(),
-            'kuliner'        => $kuliner->byKecamatan($hotel['kecamatan'], 6),
+            'title'        => $hotel['nama'] . ' — Singgah Medan',
+            'h'            => $hotel,
+            'serupa'       => $m->serupa($hotel, 3),
+            'kulinerAktif' => $klien->enabled(),
+            'kuliner'      => $kuliner,
+            'ulasan'       => $rm->forHotel((int) $hotel['id']),
+            'ringkasan'    => $rm->ringkasan((int) $hotel['id']),
+            'ulasanSaya'   => $user ? $rm->where('hotel_id', $hotel['id'])->where('user_id', $user['id'])->first() : null,
         ]);
     }
 }

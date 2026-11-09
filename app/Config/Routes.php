@@ -3,15 +3,69 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
+
+// ---- Publik ----
 $routes->get('/', 'Home::index');
 $routes->get('tentang', 'Home::tentang');
 $routes->get('penginapan', 'Hotel::index');
 $routes->get('penginapan/(:segment)', 'Hotel::show/$1');
+$routes->get('peta', 'Peta::index');
+$routes->get('kuliner', 'Kuliner::index');
+$routes->get('cari', 'Kuliner::cari');
 
-// API untuk tukar data dengan kelompok lain (read-only, JSON)
+$routes->get('bandingkan', 'Bandingkan::index');
+$routes->get('bandingkan/toggle/(:num)', 'Bandingkan::toggle/$1');
+$routes->get('bandingkan/kosongkan', 'Bandingkan::kosongkan');
+
+// ---- Akun ----
+$routes->match(['get', 'post'], 'masuk', 'Auth::masuk');
+$routes->match(['get', 'post'], 'daftar', 'Auth::daftar');
+$routes->get('keluar', 'Auth::keluar');
+$routes->get('akun', 'Akun::index');
+
+// ---- Aksi pengunjung ----
+$routes->post('favorit/(:num)', 'Interaksi::favorit/$1');
+$routes->post('penginapan/(:num)/ulasan', 'Interaksi::ulasan/$1');
+$routes->post('penginapan/(:num)/pesan', 'Interaksi::pesan/$1');
+
+// ---- Admin ----
+$routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static function (RouteCollection $routes) {
+    $routes->get('/', 'Dashboard::index');
+
+    $routes->get('hotel', 'Hotels::index');
+    $routes->get('hotel/baru', 'Hotels::baru');
+    $routes->match(['get', 'post'], 'hotel/impor', 'Hotels::impor');
+    $routes->post('hotel/simpan', 'Hotels::simpan');
+    $routes->get('hotel/(:num)/ubah', 'Hotels::ubah/$1');
+    $routes->post('hotel/(:num)/hapus', 'Hotels::hapus/$1');
+
+    $routes->get('pesan', 'Pesan::index');
+    $routes->post('pesan/(:num)/status', 'Pesan::status/$1');
+
+    $routes->get('ulasan', 'Ulasan::index');
+    $routes->post('ulasan/(:num)/hapus', 'Ulasan::hapus/$1');
+
+    $routes->get('pengguna', 'Pengguna::index');
+    $routes->post('pengguna/(:num)/peran', 'Pengguna::peran/$1');
+    $routes->post('pengguna/(:num)/hapus', 'Pengguna::hapus/$1');
+
+    $routes->get('apikey', 'ApiKeys::index');
+    $routes->post('apikey/buat', 'ApiKeys::buat');
+    $routes->post('apikey/(:num)/toggle', 'ApiKeys::toggle/$1');
+    $routes->post('apikey/(:num)/hapus', 'ApiKeys::hapus/$1');
+
+    $routes->get('kuliner', 'KulinerAdmin::index');
+    $routes->post('kuliner/sinkron', 'KulinerAdmin::sinkron');
+});
+
+// ---- API tukar data (JSON) ----
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (RouteCollection $routes) {
     $routes->options('(:any)', 'Hotels::options');
     $routes->get('hotels', 'Hotels::index');
     $routes->get('hotels/(:num)', 'Hotels::show/$1');
     $routes->get('kecamatan', 'Hotels::kecamatan');
+    $routes->get('kuliner', 'Kuliner::index');
+    $routes->post('kuliner/push', 'Kuliner::push');
+    $routes->get('export/hotels', 'Export::hotels');
+    $routes->get('export/ulasan', 'Export::ulasan');
 });

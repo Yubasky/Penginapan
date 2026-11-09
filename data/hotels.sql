@@ -1,7 +1,7 @@
 -- Singgah Medan: skema + data penginapan (PostgreSQL)
 -- Jalankan di pgAdmin (Query Tool) pada database kosong, atau: psql -d singgah_medan -f data/hotels.sql
 BEGIN;
-DROP TABLE IF EXISTS hotels;
+DROP TABLE IF EXISTS hotels CASCADE;
 CREATE TABLE hotels (
   id SERIAL PRIMARY KEY,
   peringkat INTEGER NOT NULL,

@@ -68,7 +68,7 @@
             <h2>Lapar setelah check-in?</h2>
             <p>Setiap halaman penginapan menampilkan tempat makan di kecamatan yang sama, dari data kelompok kuliner Medan.</p>
         </div>
-        <a class="btn btn--gold" href="<?= site_url('tentang') ?>">Lihat cara kerja</a>
+        <a class="btn btn--gold" href="<?= site_url('kuliner') ?>">Jelajah kuliner</a>
     </div>
 </section>
 
