@@ -27,7 +27,19 @@ class GeocodeHotel extends BaseCommand
         $ok     = 0;
         foreach ($hotels as $i => $h) {
             $alamat  = trim(preg_replace('/,?\s*Kec\..*$/i', '', (string) $h['alamat']));
-            $kandidat = [$h['nama'] . ', Medan', $alamat . ', Medan'];
+            // nama jalan saja (tanpa nomor), mis. "Jl. Pemuda No. 3" -> "Jalan Pemuda"
+            $jalan   = trim(preg_replace('/\s*(No\.?|Nomor)\s*[\w\-\/]+.*$/i', '', explode(',', $alamat)[0]));
+            $jalan   = trim(preg_replace('/^Jl\.?\s*/i', 'Jalan ', $jalan));
+            $kec     = '';
+            if (preg_match('/Kec\.?\s*([A-Za-z ]+?)\s*(?:,|$)/i', (string) $h['alamat'], $m)) {
+                $kec = trim($m[1]);
+            }
+            $kandidat = array_values(array_unique(array_filter([
+                $h['nama'] . ', Medan',
+                $alamat . ', Medan',
+                $jalan !== '' && $kec !== '' ? "{$jalan}, {$kec}, Medan" : null,
+                $jalan !== '' ? "{$jalan}, Medan" : null,
+            ])));
             $hasil   = null;
             foreach ($kandidat as $q) {
                 $hasil = $this->cari($client, $q);
