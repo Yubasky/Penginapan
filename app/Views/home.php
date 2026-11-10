@@ -27,6 +27,15 @@
             </label>
             <button class="btn btn--gold" type="submit">Cari penginapan</button>
         </form>
+
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.2rem;align-items:center">
+            <span style="color:#d1fae5;font-size:.85rem;font-weight:600">Pilihan cepat:</span>
+            <a class="chip-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:.82rem" href="<?= site_url('penginapan?rating_min=4.5&sort=rating') ?>">⭐ Rating 4.5+</a>
+            <a class="chip-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:.82rem" href="<?= site_url('penginapan?sarapan=ya') ?>">🍳 Dengan Sarapan</a>
+            <a class="chip-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:.82rem" href="<?= site_url('penginapan?kecamatan=Medan+Petisah') ?>">🏙️ Medan Petisah (Pusat)</a>
+            <a class="chip-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:.82rem" href="<?= site_url('penginapan?kecamatan=Medan+Kota') ?>">🏢 Medan Kota</a>
+            <a class="chip-link" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:.82rem" href="<?= site_url('peta') ?>">🗺️ Lihat di Peta</a>
+        </div>
     </div>
 </section>
 

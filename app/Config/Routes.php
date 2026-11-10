@@ -57,6 +57,10 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static functio
 
     $routes->get('kuliner', 'KulinerAdmin::index');
     $routes->post('kuliner/sinkron', 'KulinerAdmin::sinkron');
+
+    // ---- Laporan Cetak / PDF ----
+    $routes->get('laporan/hotel', 'Laporan::hotel');
+    $routes->get('laporan/pesan', 'Laporan::pesan');
 });
 
 // ---- API tukar data (JSON) ----

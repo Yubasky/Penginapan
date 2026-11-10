@@ -51,7 +51,20 @@
 
     <h2 style="margin-top:2.5rem">Pesan ke hotel (<?= count($pesan) ?>)</h2>
     <?php foreach ($pesan as $p): ?>
-        <div class="rev"><div class="rev__top"><a class="link" href="<?= site_url('penginapan/' . $p['hotel_slug']) ?>"><strong><?= esc($p['hotel_nama']) ?></strong></a><span class="chip chip--st st-<?= esc($p['status'], 'attr') ?>"><?= esc($p['status']) ?></span><span class="muted small"><?= tgl_id($p['created_at']) ?></span></div><p><?= esc($p['pesan'] ?: '(tanpa pesan)') ?></p></div>
+        <div class="rev">
+            <div class="rev__top">
+                <a class="link" href="<?= site_url('penginapan/' . $p['hotel_slug']) ?>"><strong><?= esc($p['hotel_nama']) ?></strong></a>
+                <span class="chip chip--st st-<?= esc($p['status'], 'attr') ?>" style="text-transform:capitalize"><?= esc($p['status']) ?></span>
+                <span class="muted small"><?= tgl_id($p['created_at']) ?></span>
+            </div>
+            <p><?= esc($p['pesan'] ?: '(tanpa pesan)') ?></p>
+            <?php if (! empty($p['balasan_admin'])): ?>
+                <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:.6rem .9rem;border-radius:6px;margin-top:.6rem">
+                    <strong style="color:#166534;font-size:.85rem;display:block">Balasan dari Pengelola / Admin:</strong>
+                    <p style="margin:.2rem 0 0;color:#15803d;font-size:.9rem"><?= nl2br(esc($p['balasan_admin'])) ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
     <?php endforeach; ?>
     <?php if (! $pesan): ?><p class="muted">Belum ada pesan.</p><?php endif; ?>
 </div>

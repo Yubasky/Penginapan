@@ -34,11 +34,22 @@ class Pesan extends AppBase
         if ($r = $this->gerbangAdminPost()) {
             return $r;
         }
-        $s = (string) $this->request->getPost('status');
+        $s       = (string) $this->request->getPost('status');
+        $balasan = trim((string) $this->request->getPost('balasan_admin'));
+
+        $data = [];
         if (in_array($s, ['baru', 'diproses', 'selesai'], true)) {
-            (new InquiryModel())->update($id, ['status' => $s]);
+            $data['status'] = $s;
+        }
+        if ($this->request->getPost('balasan_admin') !== null) {
+            $data['balasan_admin'] = $balasan !== '' ? $balasan : null;
+            $data['dibalas_at']    = $balasan !== '' ? date('Y-m-d H:i:s') : null;
         }
 
-        return redirect()->back()->with('ok', 'Status diperbarui.');
+        if ($data) {
+            (new InquiryModel())->update($id, $data);
+        }
+
+        return redirect()->back()->with('ok', 'Pesan dan status berhasil diperbarui.');
     }
 }

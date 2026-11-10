@@ -7,7 +7,15 @@
     <a href="<?= site_url('admin/ulasan') ?>"><strong><?= $c['ulasan'] ?></strong><span>Ulasan pengunjung</span></a>
     <a href="<?= site_url('admin/pengguna') ?>"><strong><?= $c['pengguna'] ?></strong><span>Pengguna</span></a>
     <a href="<?= site_url('admin/kuliner') ?>"><strong><?= $c['kuliner'] ?></strong><span>Data kuliner</span><small>sinkron: <?= $syncTerakhir ? tgl_id($syncTerakhir) : 'belum pernah' ?></small></a>
-    <a href="<?= site_url('admin/apikey') ?>"><strong><?= $c['apikey'] ?></strong><span>Kunci API aktif</span></a>
+</div>
+
+<div style="display:flex;gap:.8rem;margin:1.8rem 0;flex-wrap:wrap">
+    <a class="btn btn--outline" href="<?= site_url('admin/laporan/hotel') ?>" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem">
+        🖨️ Cetak Laporan Rekap Hotel
+    </a>
+    <a class="btn btn--outline" href="<?= site_url('admin/laporan/pesan') ?>" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem">
+        🖨️ Cetak Rekapitulasi Pesan Tamu
+    </a>
 </div>
 <h2 style="margin-top:2rem">Pesan terbaru</h2>
 <table class="tbl">

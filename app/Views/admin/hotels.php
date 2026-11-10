@@ -1,7 +1,11 @@
 <?= $this->extend('admin/layout') ?>
 <?= $this->section('content') ?>
 <div class="adm__top"><h1>Kelola hotel <small>(<?= $total ?>)</small></h1>
-    <div><a class="btn btn--ghost" href="<?= site_url('admin/hotel/impor') ?>">Impor CSV</a> <a class="btn" href="<?= site_url('admin/hotel/baru') ?>">+ Tambah hotel</a></div></div>
+    <div>
+        <a class="btn btn--outline" href="<?= site_url('admin/laporan/hotel') ?>" target="_blank" style="margin-right:.4rem">🖨️ Cetak Laporan</a>
+        <a class="btn btn--ghost" href="<?= site_url('admin/hotel/impor') ?>">Impor CSV</a> 
+        <a class="btn" href="<?= site_url('admin/hotel/baru') ?>">+ Tambah hotel</a>
+    </div></div>
 <form class="mapbar" method="get"><input type="search" name="q" value="<?= esc($q, 'attr') ?>" placeholder="Cari nama atau alamat…"><button class="btn" type="submit">Cari</button></form>
 <div class="tblwrap"><table class="tbl">
     <tr><th>#</th><th>Nama</th><th>Kecamatan</th><th>Rating</th><th>Koordinat</th><th></th></tr>
