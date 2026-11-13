@@ -66,6 +66,7 @@ class Hotel extends AppBase
             'ulasan'       => $rm->forHotel((int) $hotel['id']),
             'ringkasan'    => $rm->ringkasan((int) $hotel['id']),
             'ulasanSaya'   => $user ? $rm->where('hotel_id', $hotel['id'])->where('user_id', $user['id'])->first() : null,
+            'mediaFasilitas' => $rm->mediaForHotel((int) $hotel['id']),
         ]);
     }
 }

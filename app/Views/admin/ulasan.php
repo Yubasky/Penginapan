@@ -8,6 +8,19 @@
             <form class="inline" method="post" action="<?= site_url('admin/ulasan/' . $r['id'] . '/hapus') ?>" onsubmit="return confirm('Hapus ulasan ini?')"><?= token_field() ?><button class="linkbtn danger" type="submit">Hapus</button></form></div>
         <?php if ($r['judul']): ?><p class="rev__t"><?= esc($r['judul']) ?></p><?php endif; ?>
         <p><?= nl2br(esc($r['isi'])) ?></p>
+        <?php 
+        $admMedia = ! empty($r['media']) ? (json_decode($r['media'], true) ?: []) : [];
+        if ($admMedia): ?>
+            <div class="rev__media">
+                <?php foreach ($admMedia as $am): ?>
+                    <?php if (($am['type'] ?? '') === 'video'): ?>
+                        <div class="rev__video-box"><video src="<?= base_url(esc($am['url'])) ?>" controls preload="metadata"></video></div>
+                    <?php else: ?>
+                        <a href="<?= base_url(esc($am['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas"><img src="<?= base_url(esc($am['url'])) ?>" alt="Fasilitas" loading="lazy"></a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 <?php endforeach; ?>
 <?php if (! $items): ?><p class="muted">Belum ada ulasan.</p><?php endif; ?>

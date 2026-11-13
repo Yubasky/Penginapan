@@ -27,6 +27,7 @@ $routes->post('akun/update', 'Akun::update');
 // ---- Aksi pengunjung ----
 $routes->post('favorit/(:num)', 'Interaksi::favorit/$1');
 $routes->post('penginapan/(:num)/ulasan', 'Interaksi::ulasan/$1');
+$routes->post('penginapan/(:num)/ulasan/hapus', 'Interaksi::hapusUlasan/$1');
 $routes->post('penginapan/(:num)/pesan', 'Interaksi::pesan/$1');
 
 // ---- Admin ----

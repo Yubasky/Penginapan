@@ -213,8 +213,12 @@ textarea:focus{outline:0;border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,1
 
 /* peta & bar filter */
 .map{height:600px;border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--shadow);z-index:0}
-.mapbar{display:flex;flex-wrap:wrap;gap:.7rem;margin-bottom:1.2rem;max-width:760px}
-.mapbar input,.mapbar select{flex:1;min-width:200px}
+.mapbar{display:flex;flex-wrap:wrap;gap:.7rem;margin-bottom:1.2rem;max-width:850px;align-items:center}
+.mapbar__search{display:flex;align-items:center;gap:.5rem;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:.5rem .9rem;flex:2;min-width:240px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.mapbar__search:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,118,110,.18)}
+.mapbar__search svg{color:var(--muted);flex-shrink:0}
+.mapbar__search input{border:0;outline:0;width:100%;font:inherit;background:transparent;padding:0}
+.mapbar select{flex:1;min-width:180px}
 .food--3{grid-template-columns:repeat(3,1fr)}
 
 /* bandingkan */
@@ -266,6 +270,33 @@ body.adm{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 .keybox{background:#fff8dc;border-color:var(--gold)}
 .keybox code{display:block;margin-top:.5rem;padding:.7rem;font-size:1rem;word-break:break-all;background:#fff}
 .adm .pager{justify-content:flex-start}
+
+.btn--del-cmp{color:#dc2626!important;border-color:#fca5a5!important;background:#fef2f2!important;font-weight:600;padding:.35rem .75rem!important;font-size:.82rem!important;display:inline-flex;align-items:center;gap:.3rem;border-radius:8px!important}
+.btn--del-cmp:hover{background:#fee2e2!important;border-color:#ef4444!important;color:#b91c1c!important;transform:none}
+
+/* galeri foto & video fasilitas */
+.media-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin:1rem 0}
+.media-gallery__item{border-radius:12px;overflow:hidden;background:#fff;border:1px solid var(--line);box-shadow:0 2px 5px rgba(0,0,0,.05);display:flex;flex-direction:column}
+.media-img-link{position:relative;display:block;height:140px;overflow:hidden;background:#1a202c}
+.media-img-link img{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.media-img-link:hover img{transform:scale(1.05)}
+.media-video-wrap{position:relative;height:140px;background:#000;overflow:hidden}
+.media-video-wrap video{width:100%;height:100%;object-fit:cover}
+.media-badge{position:absolute;top:.5rem;left:.5rem;background:rgba(0,0,0,.65);color:#fff;font-size:.72rem;padding:.2rem .5rem;border-radius:999px;font-weight:600;pointer-events:none}
+.media-gallery__caption{padding:.6rem .8rem;font-size:.82rem;display:flex;justify-content:space-between;align-items:center;background:#fff;border-top:1px solid var(--line)}
+.media-author{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-author strong{color:var(--ink)}
+
+/* ulasan media */
+.rev__media{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.7rem}
+.rev__thumb{display:block;width:90px;height:90px;border-radius:8px;overflow:hidden;border:1.5px solid var(--line);position:relative}
+.rev__thumb img{width:100%;height:100%;object-fit:cover;transition:.2s}
+.rev__thumb:hover img{transform:scale(1.08)}
+.rev__video-box{max-width:320px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#000}
+.rev__video-box video{width:100%;max-height:200px;display:block}
+
+/* kotak ulasan saya */
+.my-review-card{background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:1.2rem;margin-bottom:1.5rem}
 
 @media (max-width:960px){
   .food--3{grid-template-columns:repeat(2,1fr)}

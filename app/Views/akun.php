@@ -45,7 +45,28 @@
 
     <h2 style="margin-top:2.5rem">Ulasan saya (<?= count($ulasan) ?>)</h2>
     <?php foreach ($ulasan as $r): ?>
-        <div class="rev"><div class="rev__top"><a class="link" href="<?= site_url('penginapan/' . $r['hotel_slug']) ?>#ulasan"><strong><?= esc($r['hotel_nama']) ?></strong></a><span class="stars"><?= str_repeat('★', (int) $r['rating']) ?></span><span class="muted small"><?= tgl_id($r['created_at']) ?></span></div><p><?= esc($r['isi']) ?></p></div>
+        <div class="rev">
+            <div class="rev__top">
+                <a class="link" href="<?= site_url('penginapan/' . $r['hotel_slug']) ?>#ulasan"><strong><?= esc($r['hotel_nama']) ?></strong></a>
+                <span class="stars"><?= str_repeat('★', (int) $r['rating']) ?></span>
+                <span class="muted small"><?= tgl_id($r['created_at']) ?></span>
+            </div>
+            <?php if (! empty($r['judul'])): ?><p class="rev__t"><?= esc($r['judul']) ?></p><?php endif; ?>
+            <p><?= nl2br(esc($r['isi'])) ?></p>
+            <?php 
+            $uMedia = ! empty($r['media']) ? (json_decode($r['media'], true) ?: []) : [];
+            if ($uMedia): ?>
+                <div class="rev__media">
+                    <?php foreach ($uMedia as $um): ?>
+                        <?php if (($um['type'] ?? '') === 'video'): ?>
+                            <div class="rev__video-box"><video src="<?= base_url(esc($um['url'])) ?>" controls preload="metadata"></video></div>
+                        <?php else: ?>
+                            <a href="<?= base_url(esc($um['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas"><img src="<?= base_url(esc($um['url'])) ?>" alt="Fasilitas" loading="lazy"></a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     <?php endforeach; ?>
     <?php if (! $ulasan): ?><p class="muted">Belum ada ulasan.</p><?php endif; ?>
 

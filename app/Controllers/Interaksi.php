@@ -60,17 +60,99 @@ class Interaksi extends AppBase
 
         $m    = new ReviewModel();
         $uid  = (int) $this->user()['id'];
+        $lama = $m->where('hotel_id', $id)->where('user_id', $uid)->first();
+
+        // Olah media lama jika sedang mengedit ulasan
+        $mediaList = [];
+        if ($lama && ! empty($lama['media'])) {
+            $existing = json_decode($lama['media'], true) ?: [];
+            $hapusMedia = (array) $this->request->getPost('hapus_media');
+            foreach ($existing as $ex) {
+                if (in_array($ex['url'], $hapusMedia, true)) {
+                    $realPath = FCPATH . $ex['url'];
+                    if (is_file($realPath)) {
+                        @unlink($realPath);
+                    }
+                } else {
+                    $mediaList[] = $ex;
+                }
+            }
+        }
+
+        // Olah file foto/video yang baru diunggah
+        $files = $this->request->getFileMultiple('media');
+        if ($files) {
+            $dir = FCPATH . 'uploads/reviews';
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            foreach ($files as $file) {
+                if ($file->isValid() && ! $file->hasMoved()) {
+                    $mime = $file->getMimeType();
+                    $ext  = strtolower($file->getClientExtension() ?: $file->guessExtension() ?: '');
+                    $isImg = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif']);
+                    $isVid = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'webm', 'mov', 'quicktime']);
+
+                    if (! $isImg && ! $isVid) {
+                        return redirect()->back()->withInput()->with('error', 'Format berkas "' . esc($file->getClientName()) . '" tidak didukung. Harap unggah foto (JPG, PNG, WEBP) atau video (MP4, WEBM).');
+                    }
+                    if ($file->getSizeByUnit('mb') > 30) {
+                        return redirect()->back()->withInput()->with('error', 'Berkas "' . esc($file->getClientName()) . '" terlalu besar (maksimal 30MB).');
+                    }
+
+                    $randomName = 'rev_' . $id . '_' . $uid . '_' . bin2hex(random_bytes(6)) . ($ext ? '.' . $ext : '');
+                    $file->move($dir, $randomName);
+
+                    $mediaList[] = [
+                        'url'  => 'uploads/reviews/' . $randomName,
+                        'type' => $isVid ? 'video' : 'image',
+                        'nama' => $file->getClientName(),
+                    ];
+                }
+            }
+        }
+
         $data = [
             'hotel_id' => $id,
             'user_id'  => $uid,
             'rating'   => (int) $this->request->getPost('rating'),
             'judul'    => $this->nullable($this->request->getPost('judul')),
             'isi'      => trim((string) $this->request->getPost('isi')),
+            'media'    => ! empty($mediaList) ? json_encode($mediaList) : null,
         ];
-        $lama = $m->where('hotel_id', $id)->where('user_id', $uid)->first();
-        $lama ? $m->update($lama['id'], $data) : $m->insert($data);
 
-        return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', 'Terima kasih, ulasanmu tersimpan.');
+        if ($lama) {
+            $m->update($lama['id'], $data);
+            $msg = 'Ulasanmu berhasil diperbarui.';
+        } else {
+            $m->insert($data);
+            $msg = 'Terima kasih, ulasanmu berhasil tersimpan.';
+        }
+
+        return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', $msg);
+    }
+
+    public function hapusUlasan(int $id)
+    {
+        if ($r = $this->gerbangPost()) {
+            return $r;
+        }
+        $hotel = $this->hotelAtau404($id);
+        $m     = new ReviewModel();
+        $uid   = (int) $this->user()['id'];
+        $lama  = $m->where('hotel_id', $id)->where('user_id', $uid)->first();
+
+        if ($lama) {
+            $existing = json_decode($lama['media'] ?? '[]', true) ?: [];
+            foreach ($existing as $ex) {
+                if (! empty($ex['url']) && is_file(FCPATH . $ex['url'])) {
+                    @unlink(FCPATH . $ex['url']);
+                }
+            }
+            $m->delete($lama['id']);
+        }
+
+        return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', 'Ulasanmu berhasil dihapus.');
     }
 
     public function pesan(int $id)

@@ -32,6 +32,44 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
             </div>
         </section>
 
+        <section class="panel" id="fasilitas">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem">
+                <h2 style="margin:0">📸 Foto &amp; Video Fasilitas Hotel</h2>
+                <?php if (! empty($mediaFasilitas)): ?>
+                    <span class="chip"><?= count($mediaFasilitas) ?> dokumentasi fasilitas</span>
+                <?php endif; ?>
+            </div>
+            <p class="muted small" style="margin-top:0;margin-bottom:1rem">Dokumentasi nyata fasilitas (kamar, sarapan, kolam renang, toilet, dsb.) yang diunggah oleh pengunjung hotel.</p>
+            
+            <?php if (! empty($mediaFasilitas)): ?>
+                <div class="media-gallery">
+                    <?php foreach ($mediaFasilitas as $mf): ?>
+                        <div class="media-gallery__item">
+                            <?php if ($mf['type'] === 'video'): ?>
+                                <div class="media-video-wrap">
+                                    <video src="<?= base_url(esc($mf['url'])) ?>" controls preload="metadata"></video>
+                                    <span class="media-badge">🎥 Video Fasilitas</span>
+                                </div>
+                            <?php else: ?>
+                                <a href="<?= base_url(esc($mf['url'])) ?>" target="_blank" rel="noopener" class="media-img-link" title="Klik untuk memperbesar foto">
+                                    <img src="<?= base_url(esc($mf['url'])) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
+                                    <span class="media-badge">📷 Foto Fasilitas</span>
+                                </a>
+                            <?php endif; ?>
+                            <div class="media-gallery__caption">
+                                <span class="media-author">Oleh <strong><?= esc($mf['penulis']) ?></strong></span>
+                                <span class="stars"><?= str_repeat('★', (int) $mf['rating']) ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div style="background:#faf8f2;border:1.5px dashed var(--line);border-radius:12px;padding:1.2rem;text-align:center">
+                    <p class="muted" style="margin:0">Belum ada foto atau video fasilitas dari pengunjung. Pernah menginap di sini? Tulis ulasanmu di bawah dan sertakan foto/video fasilitas hotel!</p>
+                </div>
+            <?php endif; ?>
+        </section>
+
         <section class="panel" id="ulasan">
             <h2>Ulasan tamu</h2>
             <?php if ($h['reviewer']): ?>
@@ -51,32 +89,172 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
             <?php if ($ulasan): ?>
                 <?php foreach ($ulasan as $r): ?>
                     <div class="rev">
-                        <div class="rev__top"><strong><?= esc($r['penulis']) ?></strong><span class="stars"><?= str_repeat('★', (int) $r['rating']) ?><span class="stars--off"><?= str_repeat('★', 5 - (int) $r['rating']) ?></span></span><span class="muted small"><?= tgl_id($r['created_at']) ?></span></div>
+                        <div class="rev__top">
+                            <strong><?= esc($r['penulis']) ?></strong>
+                            <span class="stars"><?= str_repeat('★', (int) $r['rating']) ?><span class="stars--off"><?= str_repeat('★', 5 - (int) $r['rating']) ?></span></span>
+                            <span class="muted small"><?= tgl_id($r['created_at']) ?></span>
+                        </div>
                         <?php if ($r['judul']): ?><p class="rev__t"><?= esc($r['judul']) ?></p><?php endif; ?>
                         <p><?= nl2br(esc($r['isi'])) ?></p>
+
+                        <?php 
+                        $rMedia = ! empty($r['media']) ? (json_decode($r['media'], true) ?: []) : [];
+                        if ($rMedia): ?>
+                            <div class="rev__media">
+                                <?php foreach ($rMedia as $rmItem): ?>
+                                    <?php if (($rmItem['type'] ?? '') === 'video'): ?>
+                                        <div class="rev__video-box">
+                                            <video src="<?= base_url(esc($rmItem['url'])) ?>" controls preload="metadata"></video>
+                                        </div>
+                                    <?php else: ?>
+                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas">
+                                            <img src="<?= base_url(esc($rmItem['url'])) ?>" alt="Foto fasilitas ulasan" loading="lazy">
+                                        </a>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
                 <p class="muted">Belum ada ulasan dari pengunjung. Jadilah yang pertama!</p>
             <?php endif; ?>
 
+            <div style="margin-top:2rem;border-top:1px solid var(--line);padding-top:1.5rem">
             <?php if ($u): ?>
-                <form class="form" method="post" action="<?= site_url('penginapan/' . $h['id'] . '/ulasan') ?>">
-                    <?= token_field() ?>
-                    <h3><?= $ulasanSaya ? 'Ubah ulasanmu' : 'Tulis ulasan' ?></h3>
-                    <?php $rt = (int) (old('rating') ?: ($ulasanSaya['rating'] ?? 0)); ?>
-                    <div class="starpick" role="radiogroup" aria-label="Rating">
-                        <?php for ($i = 5; $i >= 1; $i--): ?>
-                            <input type="radio" id="st<?= $i ?>" name="rating" value="<?= $i ?>" <?= $rt === $i ? 'checked' : '' ?>><label for="st<?= $i ?>" title="<?= $i ?> bintang">★</label>
-                        <?php endfor; ?>
+                <?php if ($ulasanSaya): ?>
+                    <!-- Kartu ulasan milik pengguna (Hanya 1 ulasan) -->
+                    <div class="my-review-card">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.7rem">
+                            <div>
+                                <span class="chip" style="background:#0f766e;color:#fff;font-weight:700">✓ Ulasan Anda</span>
+                                <p class="muted small" style="margin:.4rem 0 0">Setiap pengguna hanya dapat memberikan 1 ulasan untuk penginapan ini. Anda dapat mengedit ulasan ini kapan saja.</p>
+                            </div>
+                            <div style="display:flex;gap:.5rem;align-items:center">
+                                <button type="button" class="btn btn--sm" onclick="toggleEditUlasan()">✏️ Edit Ulasan</button>
+                                <form method="post" action="<?= site_url('penginapan/' . $h['id'] . '/ulasan/hapus') ?>" onsubmit="return confirm('Apakah Anda yakin ingin menghapus ulasan ini?')">
+                                    <?= token_field() ?>
+                                    <button type="submit" class="btn btn--sm btn--ghost" style="color:#dc2626;border-color:#fca5a5">🗑️ Hapus</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:1rem;background:#fff;border-radius:10px;padding:1rem;border:1px solid #bbf7d0">
+                            <div class="rev__top">
+                                <strong><?= esc($u['nama']) ?></strong>
+                                <span class="stars"><?= str_repeat('★', (int) $ulasanSaya['rating']) ?><span class="stars--off"><?= str_repeat('★', 5 - (int) $ulasanSaya['rating']) ?></span></span>
+                                <span class="muted small"><?= tgl_id($ulasanSaya['created_at']) ?></span>
+                            </div>
+                            <?php if (! empty($ulasanSaya['judul'])): ?>
+                                <p class="rev__t"><?= esc($ulasanSaya['judul']) ?></p>
+                            <?php endif; ?>
+                            <p><?= nl2br(esc($ulasanSaya['isi'])) ?></p>
+
+                            <?php 
+                            $myMedia = ! empty($ulasanSaya['media']) ? (json_decode($ulasanSaya['media'], true) ?: []) : [];
+                            if ($myMedia): ?>
+                                <div class="rev__media">
+                                    <?php foreach ($myMedia as $mmItem): ?>
+                                        <?php if (($mmItem['type'] ?? '') === 'video'): ?>
+                                            <div class="rev__video-box">
+                                                <video src="<?= base_url(esc($mmItem['url'])) ?>" controls preload="metadata"></video>
+                                            </div>
+                                        <?php else: ?>
+                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas">
+                                                <img src="<?= base_url(esc($mmItem['url'])) ?>" alt="Foto fasilitas" loading="lazy">
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <label>Judul (opsional)<input type="text" name="judul" maxlength="150" value="<?= old('judul', $ulasanSaya['judul'] ?? '') ?>"></label>
-                    <label>Ceritakan pengalamanmu<textarea name="isi" rows="4" minlength="10" maxlength="2000" required><?= old('isi', $ulasanSaya['isi'] ?? '') ?></textarea></label>
-                    <button class="btn" type="submit">Kirim ulasan</button>
-                </form>
+
+                    <!-- Formulir Edit Ulasan (Toggle) -->
+                    <form id="form-edit-ulasan" class="form" method="post" action="<?= site_url('penginapan/' . $h['id'] . '/ulasan') ?>" enctype="multipart/form-data" style="display:<?= session('error') ? 'flex' : 'none' ?>;background:#fbfbfb;border:1.5px solid var(--teal);padding:1.3rem;border-radius:14px">
+                        <?= token_field() ?>
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <h3 style="margin:0;color:var(--teal)">Edit Ulasan Anda</h3>
+                            <button type="button" class="btn btn--sm btn--ghost" onclick="toggleEditUlasan()">✕ Batal</button>
+                        </div>
+                        <?php $rt = (int) (old('rating') ?: ($ulasanSaya['rating'] ?? 0)); ?>
+                        <label>Rating Bintang
+                            <div class="starpick" role="radiogroup" aria-label="Rating">
+                                <?php for ($i = 5; $i >= 1; $i--): ?>
+                                    <input type="radio" id="st_edit_<?= $i ?>" name="rating" value="<?= $i ?>" <?= $rt === $i ? 'checked' : '' ?> required><label for="st_edit_<?= $i ?>" title="<?= $i ?> bintang">★</label>
+                                <?php endfor; ?>
+                            </div>
+                        </label>
+                        <label>Judul Ulasan (opsional)
+                            <input type="text" name="judul" maxlength="150" value="<?= esc(old('judul', $ulasanSaya['judul'] ?? '')) ?>" placeholder="Contoh: Menginap yang sangat nyaman!">
+                        </label>
+                        <label>Isi Ulasan Pengalaman Menginap
+                            <textarea name="isi" rows="4" minlength="10" maxlength="2000" required><?= esc(old('isi', $ulasanSaya['isi'] ?? '')) ?></textarea>
+                        </label>
+
+                        <?php if ($myMedia): ?>
+                            <div>
+                                <label style="margin-bottom:.4rem">Foto / Video Fasilitas yang Sudah Diunggah:</label>
+                                <div style="display:flex;flex-wrap:wrap;gap:.8rem">
+                                    <?php foreach ($myMedia as $idx => $mItem): ?>
+                                        <div style="border:1px solid #cbd5e1;border-radius:8px;padding:.5rem;background:#fff;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                                            <?php if (($mItem['type'] ?? '') === 'video'): ?>
+                                                <video src="<?= base_url(esc($mItem['url'])) ?>" style="width:80px;height:80px;object-fit:cover;border-radius:6px"></video>
+                                            <?php else: ?>
+                                                <img src="<?= base_url(esc($mItem['url'])) ?>" alt="Media" style="width:80px;height:80px;object-fit:cover;border-radius:6px">
+                                            <?php endif; ?>
+                                            <label style="font-size:.75rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:.2rem">
+                                                <input type="checkbox" name="hapus_media[]" value="<?= esc($mItem['url'], 'attr') ?>"> Hapus
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <label>Tambah Foto / Video Fasilitas Baru (opsional)
+                            <span class="muted small">Pilih berkas foto (JPG, PNG, WEBP) atau video (MP4, WEBM) fasilitas hotel seperti kamar, toilet, kolam renang, sarapan, dll.</span>
+                            <input type="file" name="media[]" multiple accept="image/*,video/mp4,video/webm">
+                        </label>
+
+                        <div style="display:flex;gap:.7rem;margin-top:.5rem">
+                            <button class="btn" type="submit">Simpan Perubahan Ulasan</button>
+                            <button class="btn btn--ghost" type="button" onclick="toggleEditUlasan()">Batal</button>
+                        </div>
+                    </form>
+                <?php else: ?>
+                    <!-- Formulir Tulis Ulasan Baru -->
+                    <form class="form" method="post" action="<?= site_url('penginapan/' . $h['id'] . '/ulasan') ?>" enctype="multipart/form-data">
+                        <?= token_field() ?>
+                        <h3>Tulis Ulasan Pengalaman Menginap</h3>
+                        <p class="muted small" style="margin-top:-.3rem">Bagikan pengalaman dan fasilitas hotel untuk membantu wisatawan lain.</p>
+                        <?php $rt = (int) old('rating', 0); ?>
+                        <label>Rating Bintang
+                            <div class="starpick" role="radiogroup" aria-label="Rating">
+                                <?php for ($i = 5; $i >= 1; $i--): ?>
+                                    <input type="radio" id="st<?= $i ?>" name="rating" value="<?= $i ?>" <?= $rt === $i ? 'checked' : '' ?> required><label for="st<?= $i ?>" title="<?= $i ?> bintang">★</label>
+                                <?php endfor; ?>
+                            </div>
+                        </label>
+                        <label>Judul Ulasan (opsional)
+                            <input type="text" name="judul" maxlength="150" value="<?= esc(old('judul')) ?>" placeholder="Contoh: Kamar luas, sarapan enak!">
+                        </label>
+                        <label>Ceritakan Pengalamanmu
+                            <textarea name="isi" rows="4" minlength="10" maxlength="2000" placeholder="Bagaimana kondisi kamar, pelayanan, dan fasilitas hotel selama kamu menginap?" required><?= esc(old('isi')) ?></textarea>
+                        </label>
+                        <label>Foto &amp; Video Fasilitas Hotel (opsional)
+                            <span class="muted small">Unggah dokumentasi foto (JPG, PNG, WEBP) atau video (MP4, WEBM) fasilitas seperti kamar tidur, kamar mandi, kolam renang, dll. (maks 30MB)</span>
+                            <input type="file" name="media[]" multiple accept="image/*,video/mp4,video/webm">
+                        </label>
+                        <div>
+                            <button class="btn" type="submit">Kirim Ulasan</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
             <?php else: ?>
-                <p class="muted"><a class="link" href="<?= site_url('masuk') ?>">Masuk</a> atau <a class="link" href="<?= site_url('daftar') ?>">daftar</a> untuk menulis ulasan.</p>
+                <p class="muted"><a class="link" href="<?= site_url('masuk') ?>">Masuk</a> atau <a class="link" href="<?= site_url('daftar') ?>">daftar</a> untuk menulis ulasan dan mengunggah foto/video fasilitas.</p>
             <?php endif; ?>
+            </div>
         </section>
 
         <section class="panel">
@@ -123,4 +301,19 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
         <?php endif; ?>
     </aside>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+function toggleEditUlasan() {
+    var form = document.getElementById('form-edit-ulasan');
+    if (!form) return;
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'flex';
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        form.style.display = 'none';
+    }
+}
+</script>
 <?= $this->endSection() ?>
