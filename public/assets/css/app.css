@@ -319,6 +319,28 @@ body.adm{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
   .lightbox__caption{font-size:.8rem}
 }
 
+/* Pop-up Selamat Datang Tengah Halaman */
+.login-modal{position:fixed;inset:0;background:rgba(10,46,42,.65);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.2rem;animation:lmFadeIn .25s ease}
+.login-modal.is-closing{animation:lmFadeOut .25s ease forwards}
+.login-modal__card{position:relative;background:#fff;border-radius:20px;padding:2.2rem 2rem;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,.25);animation:lmZoomIn .25s ease}
+.login-modal__icon{font-size:3rem;line-height:1;margin-bottom:.8rem;animation:lmWave 1.2s infinite ease-in-out}
+.login-modal__card h2{font-family:'Fraunces',serif;color:var(--teal);margin:0 0 .5rem;font-size:1.8rem}
+.login-modal__card p{color:var(--muted);font-size:.95rem;line-height:1.55;margin:0 0 1.5rem}
+.login-modal__close{position:absolute;top:1rem;right:1.1rem;background:transparent;border:0;font-size:1.3rem;color:var(--muted);cursor:pointer;padding:.3rem;line-height:1;border-radius:50%;transition:.2s}
+.login-modal__close:hover{color:var(--ink);background:#f1f5f9}
+.login-modal__actions{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+@keyframes lmFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes lmFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes lmZoomIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes lmWave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(14deg)}40%,80%{transform:rotate(-14deg)}}
+
+/* Foto Sampul Kartu Hotel & Banner */
+.card__cover--has-img{background:#0a2e2a;overflow:hidden}
+.card__photo{width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.card:hover .card__photo{transform:scale(1.06)}
+.detail__hero--has-cover{position:relative;background-size:cover!important;background-position:center!important;border-bottom:3px solid var(--gold)}
+.media-badge--hotel{background:rgba(15,118,110,.95)!important;color:#fff!important;border:1px solid rgba(255,255,255,.4)}
+
 @media (max-width:960px){
   .food--3{grid-template-columns:repeat(2,1fr)}
   body.adm{grid-template-columns:1fr}

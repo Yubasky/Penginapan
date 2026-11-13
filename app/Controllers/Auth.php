@@ -16,7 +16,7 @@ class Auth extends AppBase
             $kembali = $u['role'] === 'admin' ? site_url('admin') : site_url('/');
         }
 
-        return redirect()->to($kembali)->with('ok', 'Halo, ' . $u['nama'] . '!');
+        return redirect()->to($kembali)->with('login_popup', $u['nama']);
     }
 
     public function masuk()
@@ -80,7 +80,9 @@ class Auth extends AppBase
 
     public function keluar()
     {
-        session()->destroy();
+        session()->remove('user');
+        session()->regenerate(true);
+        session()->setFlashdata('logout_popup', true);
 
         return redirect()->to(site_url('/'));
     }

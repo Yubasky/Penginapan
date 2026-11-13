@@ -12,7 +12,7 @@ class HotelModel extends Model
     protected $allowedFields = [
         'peringkat', 'halaman', 'nama', 'slug', 'rating', 'jumlah_ulasan', 'sarapan', 'reviewer',
         'rating_ulasan', 'tanggal_ulasan', 'judul_ulasan', 'link_tripadvisor', 'alamat', 'kecamatan',
-        'latitude', 'longitude',
+        'latitude', 'longitude', 'foto', 'foto_fasilitas',
     ];
     protected $useTimestamps = true;
 

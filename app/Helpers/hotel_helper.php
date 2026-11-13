@@ -98,8 +98,12 @@ if (! function_exists('hotel_card')) {
         $cmp = in_array((int) $h['id'], bandingkan_ids(), true);
         ob_start(); ?>
         <article class="card">
-            <a class="card__cover" href="<?= site_url('penginapan/' . $h['slug']) ?>" style="--h: <?= hue_hotel($h) ?>" aria-label="<?= esc($h['nama'], 'attr') ?>">
-                <span class="card__mono"><?= esc(inisial_hotel($h['nama'])) ?></span>
+            <a class="card__cover <?= ! empty($h['foto']) ? 'card__cover--has-img' : '' ?>" href="<?= site_url('penginapan/' . $h['slug']) ?>" style="--h: <?= hue_hotel($h) ?>" aria-label="<?= esc($h['nama'], 'attr') ?>">
+                <?php if (! empty($h['foto'])): ?>
+                    <img src="<?= base_url(esc($h['foto'])) ?>" alt="<?= esc($h['nama']) ?>" class="card__photo" loading="lazy">
+                <?php else: ?>
+                    <span class="card__mono"><?= esc(inisial_hotel($h['nama'])) ?></span>
+                <?php endif; ?>
                 <?php if ($h['sarapan'] !== 'Tidak'): ?>
                     <span class="chip chip--gold"><?= $h['sarapan'] === 'All-in' ? 'All-in' : 'Sarapan' ?></span>
                 <?php endif; ?>

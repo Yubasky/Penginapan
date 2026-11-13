@@ -21,7 +21,7 @@ $now  = trim(service('uri')->getPath(), '/');
             <a class="<?= $on ? 'is-on' : '' ?>" href="<?= site_url($path) ?>"><?= $label ?></a>
         <?php endforeach; ?>
     </nav>
-    <div class="adm__foot"><a href="<?= site_url('/') ?>">← Lihat situs</a><a href="<?= site_url('keluar') ?>">Keluar</a></div>
+    <div class="adm__foot"><a href="<?= site_url('/') ?>">← Lihat situs</a><a href="<?= site_url('keluar') ?>" onclick="return confirm('Apakah Anda yakin ingin keluar dari akun?');">Keluar</a></div>
 </aside>
 <main class="adm__main">
     <?php $ok = session()->getFlashdata('ok'); $er = session()->getFlashdata('error'); ?>

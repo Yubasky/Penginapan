@@ -101,10 +101,75 @@ class Hotels extends AppBase
             'longitude'        => $this->nullable($in['longitude'] ?? null),
         ];
 
-        if ($id) {
-            if (! $m->find($id)) {
-                throw PageNotFoundException::forPageNotFound();
+        $hotelLama = $id ? $m->find($id) : null;
+        if ($id && ! $hotelLama) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $dirHotels = FCPATH . 'uploads/hotels';
+        if (! is_dir($dirHotels)) {
+            mkdir($dirHotels, 0755, true);
+        }
+
+        // 1. Olah Foto Sampul / Background Hotel
+        if ($this->request->getPost('hapus_foto')) {
+            if (! empty($hotelLama['foto']) && is_file(FCPATH . $hotelLama['foto'])) {
+                @unlink(FCPATH . $hotelLama['foto']);
             }
+            $data['foto'] = null;
+        } else {
+            $data['foto'] = $hotelLama['foto'] ?? null;
+        }
+
+        $fileFoto = $this->request->getFile('foto');
+        if ($fileFoto && $fileFoto->isValid() && ! $fileFoto->hasMoved()) {
+            $ext = strtolower($fileFoto->getClientExtension() ?: $fileFoto->guessExtension() ?: '');
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $namaFoto = 'cover_' . ($id ?: 'new') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+                $fileFoto->move($dirHotels, $namaFoto);
+                if (! empty($hotelLama['foto']) && is_file(FCPATH . $hotelLama['foto'])) {
+                    @unlink(FCPATH . $hotelLama['foto']);
+                }
+                $data['foto'] = 'uploads/hotels/' . $namaFoto;
+            }
+        }
+
+        // 2. Olah Foto Fasilitas Resmi Hotel dari Admin
+        $facList = [];
+        if ($hotelLama && ! empty($hotelLama['foto_fasilitas'])) {
+            $existingFac = json_decode($hotelLama['foto_fasilitas'], true) ?: [];
+            $hapusFac    = (array) $this->request->getPost('hapus_foto_fasilitas');
+            foreach ($existingFac as $ef) {
+                if (in_array($ef['url'], $hapusFac, true)) {
+                    if (is_file(FCPATH . $ef['url'])) {
+                        @unlink(FCPATH . $ef['url']);
+                    }
+                } else {
+                    $facList[] = $ef;
+                }
+            }
+        }
+
+        $filesFac = $this->request->getFileMultiple('foto_fasilitas');
+        if ($filesFac) {
+            foreach ($filesFac as $ff) {
+                if ($ff->isValid() && ! $ff->hasMoved()) {
+                    $ext = strtolower($ff->getClientExtension() ?: $ff->guessExtension() ?: '');
+                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                        $namaFac = 'fac_' . ($id ?: 'new') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+                        $ff->move($dirHotels, $namaFac);
+                        $facList[] = [
+                            'url'  => 'uploads/hotels/' . $namaFac,
+                            'type' => 'image',
+                            'nama' => $ff->getClientName(),
+                        ];
+                    }
+                }
+            }
+        }
+        $data['foto_fasilitas'] = ! empty($facList) ? json_encode($facList) : null;
+
+        if ($id) {
             $m->update($id, $data);
             $msg = 'Hotel diperbarui.';
         } else {

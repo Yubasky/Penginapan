@@ -5,7 +5,7 @@ $u      = session('user');
 $isFav  = in_array((int) $h['id'], favorit_ids(), true);
 $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
 ?>
-<section class="detail__hero" style="--h: <?= hue_hotel($h) ?>">
+<section class="detail__hero <?= ! empty($h['foto']) ? 'detail__hero--has-cover' : '' ?>" style="--h: <?= hue_hotel($h) ?><?= ! empty($h['foto']) ? '; background-image: linear-gradient(to bottom, rgba(10,46,42,0.7), rgba(10,46,42,0.92)), url(\'' . base_url(esc($h['foto'])) . '\'); background-size: cover; background-position: center;' : '' ?>">
     <div class="wrap">
         <a class="back" href="<?= site_url('penginapan') ?>">← Semua penginapan</a>
         <?php if (! empty($h['kecamatan'])): ?><p class="eyebrow eyebrow--gold"><?= esc($h['kecamatan']) ?>, Medan</p><?php endif; ?>
@@ -35,37 +35,71 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
         <section class="panel" id="fasilitas">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem">
                 <h2 style="margin:0">📸 Foto &amp; Video Fasilitas Hotel</h2>
-                <?php if (! empty($mediaFasilitas)): ?>
-                    <span class="chip"><?= count($mediaFasilitas) ?> dokumentasi fasilitas</span>
+                <?php 
+                $adminFasilitas = ! empty($h['foto_fasilitas']) ? (json_decode($h['foto_fasilitas'], true) ?: []) : [];
+                $semuaFasilitas = [];
+                foreach ($adminFasilitas as $af) {
+                    if (! empty($af['url'])) {
+                        $semuaFasilitas[] = [
+                            'url'     => $af['url'],
+                            'type'    => 'image',
+                            'sumber'  => 'hotel',
+                            'penulis' => 'Pihak Hotel',
+                            'caption' => 'Foto Resmi Fasilitas Hotel (Pihak Hotel)',
+                        ];
+                    }
+                }
+                foreach ($mediaFasilitas as $mf) {
+                    $semuaFasilitas[] = [
+                        'url'     => $mf['url'],
+                        'type'    => $mf['type'] ?? 'image',
+                        'sumber'  => 'tamu',
+                        'penulis' => $mf['penulis'],
+                        'rating'  => $mf['rating'] ?? null,
+                        'caption' => 'Fasilitas oleh Tamu: ' . $mf['penulis'],
+                    ];
+                }
+                ?>
+                <?php if (! empty($semuaFasilitas)): ?>
+                    <span class="chip"><?= count($semuaFasilitas) ?> dokumentasi fasilitas</span>
                 <?php endif; ?>
             </div>
-            <p class="muted small" style="margin-top:0;margin-bottom:1rem">Dokumentasi nyata fasilitas (kamar, sarapan, kolam renang, toilet, dsb.) yang diunggah oleh pengunjung hotel.</p>
+            <p class="muted small" style="margin-top:0;margin-bottom:1rem">Dokumentasi nyata fasilitas (kamar, sarapan, kolam renang, toilet, dsb.) dari pihak hotel dan ulasan pengunjung.</p>
             
-            <?php if (! empty($mediaFasilitas)): ?>
+            <?php if (! empty($semuaFasilitas)): ?>
                 <div class="media-gallery">
-                    <?php foreach ($mediaFasilitas as $mf): ?>
+                    <?php foreach ($semuaFasilitas as $sf): ?>
                         <div class="media-gallery__item">
-                            <?php if ($mf['type'] === 'video'): ?>
+                            <?php if ($sf['type'] === 'video'): ?>
                                 <div class="media-video-wrap">
-                                    <video src="<?= base_url(esc($mf['url'])) ?>" controls preload="metadata"></video>
+                                    <video src="<?= base_url(esc($sf['url'])) ?>" controls preload="metadata"></video>
                                     <span class="media-badge">🎥 Video Fasilitas</span>
                                 </div>
                             <?php else: ?>
-                                <a href="<?= base_url(esc($mf['url'])) ?>" class="media-img-link js-lightbox" data-gallery="fasilitas" data-caption="Fasilitas <?= esc($h['nama']) ?> · Oleh <?= esc($mf['penulis']) ?>" title="Klik untuk melihat foto">
-                                    <img src="<?= base_url(esc($mf['url'])) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
-                                    <span class="media-badge">📷 Foto Fasilitas</span>
+                                <a href="<?= base_url(esc($sf['url'])) ?>" class="media-img-link js-lightbox" data-gallery="fasilitas-utama" data-caption="Fasilitas <?= esc($h['nama']) ?> · <?= esc($sf['caption']) ?>" title="Klik untuk melihat foto">
+                                    <img src="<?= base_url(esc($sf['url'])) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
+                                    <span class="media-badge <?= $sf['sumber'] === 'hotel' ? 'media-badge--hotel' : '' ?>">
+                                        <?= $sf['sumber'] === 'hotel' ? '🏢 Pihak Hotel' : '📷 Oleh Tamu' ?>
+                                    </span>
                                 </a>
                             <?php endif; ?>
                             <div class="media-gallery__caption">
-                                <span class="media-author">Oleh <strong><?= esc($mf['penulis']) ?></strong></span>
-                                <span class="stars"><?= str_repeat('★', (int) $mf['rating']) ?></span>
+                                <?php if ($sf['sumber'] === 'hotel'): ?>
+                                    <span class="media-author">Oleh <strong>Pihak Hotel</strong></span>
+                                    <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:0.72rem;font-weight:700">Resmi</span>
+                                <?php else: ?>
+                                    <span class="media-author">Oleh <strong><?= esc($sf['penulis']) ?></strong></span>
+                                    <?php if (! empty($sf['rating'])): ?>
+                                        <span class="stars"><?= str_repeat('★', (int) $sf['rating']) ?></span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
                 <div style="background:#faf8f2;border:1.5px dashed var(--line);border-radius:12px;padding:1.2rem;text-align:center">
-                    <p class="muted" style="margin:0">Belum ada foto atau video fasilitas dari pengunjung. Pernah menginap di sini? Tulis ulasanmu di bawah dan sertakan foto/video fasilitas hotel!</p>
+                    <p class="muted" style="margin:0">Belum ada foto atau video fasilitas. Pernah menginap di sini? Tulis ulasanmu di bawah dan sertakan foto/video fasilitas hotel!</p>
                 </div>
             <?php endif; ?>
         </section>
@@ -107,7 +141,7 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                             <video src="<?= base_url(esc($rmItem['url'])) ?>" controls preload="metadata"></video>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="fasilitas" data-caption="Foto fasilitas ulasan dari <?= esc($r['penulis']) ?>" title="Klik untuk melihat foto">
+                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-<?= $r['id'] ?>" data-caption="Foto fasilitas ulasan dari <?= esc($r['penulis']) ?>" title="Klik untuk melihat foto">
                                             <img src="<?= base_url(esc($rmItem['url'])) ?>" alt="Foto fasilitas ulasan" loading="lazy">
                                         </a>
                                     <?php endif; ?>
@@ -160,7 +194,7 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                                 <video src="<?= base_url(esc($mmItem['url'])) ?>" controls preload="metadata"></video>
                                             </div>
                                         <?php else: ?>
-                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="fasilitas" data-caption="Foto fasilitas ulasan Anda" title="Klik untuk melihat foto">
+                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-saya" data-caption="Foto fasilitas ulasan Anda" title="Klik untuk melihat foto">
                                                 <img src="<?= base_url(esc($mmItem['url'])) ?>" alt="Foto fasilitas" loading="lazy">
                                             </a>
                                         <?php endif; ?>
@@ -397,21 +431,33 @@ function toggleEditUlasan() {
         updateLightbox();
     }
 
-    // Sambungkan ke semua tautan berkelas js-lightbox
+    // Sambungkan ke semua tautan berkelas js-lightbox dengan deduplikasi URL
     document.querySelectorAll('.js-lightbox').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();
             var gName = el.getAttribute('data-gallery') || 'default';
             var groupElements = Array.from(document.querySelectorAll('.js-lightbox[data-gallery="' + gName + '"]'));
-            var items = groupElements.map(function (elem) {
-                return {
-                    src: elem.getAttribute('href'),
-                    caption: elem.getAttribute('data-caption') || ''
-                };
+            
+            var items = [];
+            var seen = new Set();
+            var targetSrc = el.getAttribute('href');
+            var targetIdx = 0;
+
+            groupElements.forEach(function (elem) {
+                var s = elem.getAttribute('href');
+                if (!seen.has(s)) {
+                    seen.add(s);
+                    if (s === targetSrc) {
+                        targetIdx = items.length;
+                    }
+                    items.push({
+                        src: s,
+                        caption: elem.getAttribute('data-caption') || ''
+                    });
+                }
             });
-            var idx = groupElements.indexOf(el);
-            if (idx === -1) idx = 0;
-            openLightbox(items, idx);
+
+            openLightbox(items, targetIdx);
         });
     });
 
