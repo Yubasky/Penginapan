@@ -298,6 +298,27 @@ body.adm{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 /* kotak ulasan saya */
 .my-review-card{background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:1.2rem;margin-bottom:1.5rem}
 
+/* Lightbox Modal */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(4px);z-index:99999;display:none;align-items:center;justify-content:center;padding:1rem;user-select:none;animation:lbFade .2s ease}
+.lightbox.is-open{display:flex}
+.lightbox__content{position:relative;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.lightbox__img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6);transition:opacity .15s ease}
+.lightbox__caption{color:#f1f5f9;margin-top:.8rem;font-size:.9rem;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.8);max-width:80vw}
+.lightbox__counter{position:absolute;top:1rem;left:1.2rem;color:#cbd5e1;font-size:.85rem;background:rgba(0,0,0,.5);padding:.3rem .7rem;border-radius:999px;font-weight:600}
+.lightbox__btn{position:absolute;background:rgba(255,255,255,.15);color:#fff;border:0;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;cursor:pointer;transition:.2s;backdrop-filter:blur(4px);z-index:10}
+.lightbox__btn:hover{background:rgba(255,255,255,.3);transform:scale(1.08)}
+.lightbox__close{top:1rem;right:1.2rem;font-size:1.3rem}
+.lightbox__prev{left:1.5rem;top:50%;transform:translateY(-50%)}
+.lightbox__next{right:1.5rem;top:50%;transform:translateY(-50%)}
+.lightbox__prev:hover{transform:translateY(-50%) scale(1.08)}
+.lightbox__next:hover{transform:translateY(-50%) scale(1.08)}
+@keyframes lbFade{from{opacity:0}to{opacity:1}}
+@media (max-width:640px){
+  .lightbox__prev{left:.5rem;width:38px;height:38px;font-size:1.1rem}
+  .lightbox__next{right:.5rem;width:38px;height:38px;font-size:1.1rem}
+  .lightbox__caption{font-size:.8rem}
+}
+
 @media (max-width:960px){
   .food--3{grid-template-columns:repeat(2,1fr)}
   body.adm{grid-template-columns:1fr}

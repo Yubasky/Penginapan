@@ -51,7 +51,7 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                     <span class="media-badge">🎥 Video Fasilitas</span>
                                 </div>
                             <?php else: ?>
-                                <a href="<?= base_url(esc($mf['url'])) ?>" target="_blank" rel="noopener" class="media-img-link" title="Klik untuk memperbesar foto">
+                                <a href="<?= base_url(esc($mf['url'])) ?>" class="media-img-link js-lightbox" data-gallery="fasilitas" data-caption="Fasilitas <?= esc($h['nama']) ?> · Oleh <?= esc($mf['penulis']) ?>" title="Klik untuk melihat foto">
                                     <img src="<?= base_url(esc($mf['url'])) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
                                     <span class="media-badge">📷 Foto Fasilitas</span>
                                 </a>
@@ -107,7 +107,7 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                             <video src="<?= base_url(esc($rmItem['url'])) ?>" controls preload="metadata"></video>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas">
+                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="fasilitas" data-caption="Foto fasilitas ulasan dari <?= esc($r['penulis']) ?>" title="Klik untuk melihat foto">
                                             <img src="<?= base_url(esc($rmItem['url'])) ?>" alt="Foto fasilitas ulasan" loading="lazy">
                                         </a>
                                     <?php endif; ?>
@@ -160,7 +160,7 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                                 <video src="<?= base_url(esc($mmItem['url'])) ?>" controls preload="metadata"></video>
                                             </div>
                                         <?php else: ?>
-                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas">
+                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="fasilitas" data-caption="Foto fasilitas ulasan Anda" title="Klik untuk melihat foto">
                                                 <img src="<?= base_url(esc($mmItem['url'])) ?>" alt="Foto fasilitas" loading="lazy">
                                             </a>
                                         <?php endif; ?>
@@ -301,6 +301,18 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
         <?php endif; ?>
     </aside>
 </div>
+
+<!-- Modal Lightbox Galeri Foto -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+    <button class="lightbox__btn lightbox__close" id="lb-close" aria-label="Tutup pratinjau">✕</button>
+    <div class="lightbox__counter" id="lb-counter"></div>
+    <button class="lightbox__btn lightbox__prev" id="lb-prev" aria-label="Foto sebelumnya">❮</button>
+    <div class="lightbox__content">
+        <img class="lightbox__img" id="lb-img" src="" alt="Pratinjau foto fasilitas">
+        <div class="lightbox__caption" id="lb-caption"></div>
+    </div>
+    <button class="lightbox__btn lightbox__next" id="lb-next" aria-label="Foto berikutnya">❯</button>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
@@ -315,5 +327,112 @@ function toggleEditUlasan() {
         form.style.display = 'none';
     }
 }
+
+// Interaktif Lightbox Foto Fasilitas
+(function () {
+    var lb = document.getElementById('lightbox');
+    if (!lb) return;
+    var lbImg = document.getElementById('lb-img');
+    var lbCaption = document.getElementById('lb-caption');
+    var lbCounter = document.getElementById('lb-counter');
+    var lbPrev = document.getElementById('lb-prev');
+    var lbNext = document.getElementById('lb-next');
+    var lbClose = document.getElementById('lb-close');
+
+    var currentGallery = [];
+    var currentIndex = 0;
+
+    function openLightbox(galleryItems, index) {
+        if (!galleryItems.length) return;
+        currentGallery = galleryItems;
+        currentIndex = index;
+        updateLightbox();
+        lb.classList.add('is-open');
+        lb.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+        lb.classList.remove('is-open');
+        lb.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        lbImg.src = '';
+    }
+
+    function updateLightbox() {
+        if (!currentGallery.length) return;
+        var item = currentGallery[currentIndex];
+        lbImg.style.opacity = '0';
+        setTimeout(function () {
+            lbImg.src = item.src;
+            lbImg.alt = item.caption || 'Foto Fasilitas';
+            lbImg.onload = function () {
+                lbImg.style.opacity = '1';
+            };
+        }, 60);
+
+        lbCaption.textContent = item.caption || '';
+
+        if (currentGallery.length > 1) {
+            lbCounter.style.display = 'block';
+            lbCounter.textContent = (currentIndex + 1) + ' / ' + currentGallery.length;
+            lbPrev.style.display = 'grid';
+            lbNext.style.display = 'grid';
+        } else {
+            lbCounter.style.display = 'none';
+            lbPrev.style.display = 'none';
+            lbNext.style.display = 'none';
+        }
+    }
+
+    function prevImage() {
+        if (currentGallery.length <= 1) return;
+        currentIndex = (currentIndex - 1 + currentGallery.length) % currentGallery.length;
+        updateLightbox();
+    }
+
+    function nextImage() {
+        if (currentGallery.length <= 1) return;
+        currentIndex = (currentIndex + 1) % currentGallery.length;
+        updateLightbox();
+    }
+
+    // Sambungkan ke semua tautan berkelas js-lightbox
+    document.querySelectorAll('.js-lightbox').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+            e.preventDefault();
+            var gName = el.getAttribute('data-gallery') || 'default';
+            var groupElements = Array.from(document.querySelectorAll('.js-lightbox[data-gallery="' + gName + '"]'));
+            var items = groupElements.map(function (elem) {
+                return {
+                    src: elem.getAttribute('href'),
+                    caption: elem.getAttribute('data-caption') || ''
+                };
+            });
+            var idx = groupElements.indexOf(el);
+            if (idx === -1) idx = 0;
+            openLightbox(items, idx);
+        });
+    });
+
+    lbClose.addEventListener('click', closeLightbox);
+    lbPrev.addEventListener('click', function (e) { e.stopPropagation(); prevImage(); });
+    lbNext.addEventListener('click', function (e) { e.stopPropagation(); nextImage(); });
+
+    // Klik di area gelap luar gambar untuk menutup
+    lb.addEventListener('click', function (e) {
+        if (e.target === lb || e.target.classList.contains('lightbox__content')) {
+            closeLightbox();
+        }
+    });
+
+    // Navigasi keyboard (Panah Kiri, Panah Kanan, Escape)
+    window.addEventListener('keydown', function (e) {
+        if (!lb.classList.contains('is-open')) return;
+        if (e.key === 'Escape') closeLightbox();
+        else if (e.key === 'ArrowLeft') prevImage();
+        else if (e.key === 'ArrowRight') nextImage();
+    });
+})();
 </script>
 <?= $this->endSection() ?>
