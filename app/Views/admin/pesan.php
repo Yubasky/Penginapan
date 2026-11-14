@@ -34,9 +34,22 @@
         </p>
 
         <div style="background:#f9f8f4;padding:.8rem 1rem;border-radius:8px;margin:.6rem 0">
-            <strong class="small" style="color:var(--muted)">Pesan Tamu:</strong>
+            <strong class="small" style="color:var(--muted)">Pertanyaan / Pesan Tamu:</strong>
             <p style="margin:.2rem 0 0"><?= nl2br(esc($p['pesan'] ?: '(tanpa pesan)')) ?></p>
         </div>
+
+        <?php 
+        $allAns = json_decode($p['jawaban'] ?? '[]', true) ?: [];
+        if ($allAns): ?>
+            <div style="margin:.6rem 0;padding:.6rem .8rem;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+                <strong class="small" style="color:#166534">💬 Riwayat Jawaban / Diskusi Q&amp;A (<?= count($allAns) ?>):</strong>
+                <ul style="margin:.3rem 0 0;padding-left:1.2rem;font-size:.85rem;color:#14532d">
+                    <?php foreach ($allAns as $ans): ?>
+                        <li style="margin-bottom:.2rem"><strong><?= esc($ans['nama']) ?> (<?= esc($ans['role'] ?? 'user') ?>):</strong> <?= esc($ans['isi']) ?> <span class="muted" style="font-size:.78rem">(<?= tgl_id($ans['created_at'] ?? null) ?>)</span></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
 
         <!-- Form Balasan & Update Status -->
         <form method="post" action="<?= site_url('admin/pesan/' . $p['id'] . '/status') ?>" style="margin-top:.8rem;border-top:1px dashed var(--line);padding-top:.8rem">

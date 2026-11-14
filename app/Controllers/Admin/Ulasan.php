@@ -25,7 +25,13 @@ class Ulasan extends AppBase
         if ($r = $this->gerbangAdminPost()) {
             return $r;
         }
-        (new ReviewModel())->delete($id);
+        $m   = new ReviewModel();
+        $rev = $m->find($id);
+        if ($rev) {
+            $hotelId = (int) $rev['hotel_id'];
+            $m->delete($id);
+            (new \App\Models\HotelModel())->sinkronRating($hotelId);
+        }
 
         return redirect()->back()->with('ok', 'Ulasan dihapus.');
     }

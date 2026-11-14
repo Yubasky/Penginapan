@@ -106,16 +106,8 @@ class Hotels extends AppBase
             throw PageNotFoundException::forPageNotFound();
         }
 
-        $dirHotels = FCPATH . 'uploads/hotels';
-        if (! is_dir($dirHotels)) {
-            mkdir($dirHotels, 0755, true);
-        }
-
-        // 1. Olah Foto Sampul / Background Hotel
+        // 1. Olah Foto Sampul / Background Hotel (Base64 Cloud Supabase)
         if ($this->request->getPost('hapus_foto')) {
-            if (! empty($hotelLama['foto']) && is_file(FCPATH . $hotelLama['foto'])) {
-                @unlink(FCPATH . $hotelLama['foto']);
-            }
             $data['foto'] = null;
         } else {
             $data['foto'] = $hotelLama['foto'] ?? null;
@@ -123,28 +115,20 @@ class Hotels extends AppBase
 
         $fileFoto = $this->request->getFile('foto');
         if ($fileFoto && $fileFoto->isValid() && ! $fileFoto->hasMoved()) {
-            $ext = strtolower($fileFoto->getClientExtension() ?: $fileFoto->guessExtension() ?: '');
+            $ext  = strtolower($fileFoto->getClientExtension() ?: $fileFoto->guessExtension() ?: '');
+            $mime = $fileFoto->getMimeType() ?: 'image/jpeg';
             if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                $namaFoto = 'cover_' . ($id ?: 'new') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-                $fileFoto->move($dirHotels, $namaFoto);
-                if (! empty($hotelLama['foto']) && is_file(FCPATH . $hotelLama['foto'])) {
-                    @unlink(FCPATH . $hotelLama['foto']);
-                }
-                $data['foto'] = 'uploads/hotels/' . $namaFoto;
+                $data['foto'] = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fileFoto->getTempName()));
             }
         }
 
-        // 2. Olah Foto Fasilitas Resmi Hotel dari Admin
+        // 2. Olah Foto Fasilitas Resmi Hotel dari Admin (Base64 Cloud Supabase)
         $facList = [];
         if ($hotelLama && ! empty($hotelLama['foto_fasilitas'])) {
             $existingFac = json_decode($hotelLama['foto_fasilitas'], true) ?: [];
             $hapusFac    = (array) $this->request->getPost('hapus_foto_fasilitas');
             foreach ($existingFac as $ef) {
-                if (in_array($ef['url'], $hapusFac, true)) {
-                    if (is_file(FCPATH . $ef['url'])) {
-                        @unlink(FCPATH . $ef['url']);
-                    }
-                } else {
+                if (! in_array($ef['url'], $hapusFac, true)) {
                     $facList[] = $ef;
                 }
             }
@@ -154,12 +138,12 @@ class Hotels extends AppBase
         if ($filesFac) {
             foreach ($filesFac as $ff) {
                 if ($ff->isValid() && ! $ff->hasMoved()) {
-                    $ext = strtolower($ff->getClientExtension() ?: $ff->guessExtension() ?: '');
+                    $ext  = strtolower($ff->getClientExtension() ?: $ff->guessExtension() ?: '');
+                    $mime = $ff->getMimeType() ?: 'image/jpeg';
                     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                        $namaFac = 'fac_' . ($id ?: 'new') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-                        $ff->move($dirHotels, $namaFac);
+                        $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($ff->getTempName()));
                         $facList[] = [
-                            'url'  => 'uploads/hotels/' . $namaFac,
+                            'url'  => $base64,
                             'type' => 'image',
                             'nama' => $ff->getClientName(),
                         ];

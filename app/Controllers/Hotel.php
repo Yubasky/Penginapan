@@ -57,16 +57,22 @@ class Hotel extends AppBase
             $kuliner = $klien->byKecamatan($hotel['kecamatan'], 6);
         }
 
+        $inquiries = (new \App\Models\InquiryModel())
+            ->where('hotel_id', (int) $hotel['id'])
+            ->orderBy('created_at', 'DESC')
+            ->findAll(50);
+
         return view('hotels/show', [
-            'title'        => $hotel['nama'] . ' — Singgah Medan',
-            'h'            => $hotel,
-            'serupa'       => $m->serupa($hotel, 3),
-            'kulinerAktif' => $klien->enabled(),
-            'kuliner'      => $kuliner,
-            'ulasan'       => $rm->forHotel((int) $hotel['id']),
-            'ringkasan'    => $rm->ringkasan((int) $hotel['id']),
-            'ulasanSaya'   => $user ? $rm->where('hotel_id', $hotel['id'])->where('user_id', $user['id'])->first() : null,
+            'title'          => $hotel['nama'] . ' — Singgah Medan',
+            'h'              => $hotel,
+            'serupa'         => $m->serupa($hotel, 3),
+            'kulinerAktif'   => $klien->enabled(),
+            'kuliner'        => $kuliner,
+            'ulasan'         => $rm->forHotel((int) $hotel['id']),
+            'ringkasan'      => $rm->ringkasan((int) $hotel['id']),
+            'ulasanSaya'     => $user ? $rm->where('hotel_id', $hotel['id'])->where('user_id', $user['id'])->first() : null,
             'mediaFasilitas' => $rm->mediaForHotel((int) $hotel['id']),
+            'inquiries'      => $inquiries,
         ]);
     }
 }

@@ -44,6 +44,23 @@ class Pesan extends AppBase
         if ($this->request->getPost('balasan_admin') !== null) {
             $data['balasan_admin'] = $balasan !== '' ? $balasan : null;
             $data['dibalas_at']    = $balasan !== '' ? date('Y-m-d H:i:s') : null;
+
+            if ($balasan !== '') {
+                $mInq = new InquiryModel();
+                $inq  = $mInq->find($id);
+                if ($inq) {
+                    $jawaban = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
+                    $jawaban[] = [
+                        'id'         => bin2hex(random_bytes(6)),
+                        'user_id'    => session('user')['id'] ?? null,
+                        'nama'       => session('user')['nama'] ?? 'Admin Pengelola',
+                        'role'       => 'admin',
+                        'isi'        => $balasan,
+                        'created_at' => date('Y-m-d H:i:s'),
+                    ];
+                    $data['jawaban'] = json_encode($jawaban);
+                }
+            }
         }
 
         if ($data) {

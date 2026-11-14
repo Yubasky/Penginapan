@@ -12,7 +12,7 @@ class HotelModel extends Model
     protected $allowedFields = [
         'peringkat', 'halaman', 'nama', 'slug', 'rating', 'jumlah_ulasan', 'sarapan', 'reviewer',
         'rating_ulasan', 'tanggal_ulasan', 'judul_ulasan', 'link_tripadvisor', 'alamat', 'kecamatan',
-        'latitude', 'longitude', 'foto', 'foto_fasilitas',
+        'latitude', 'longitude', 'foto', 'foto_fasilitas', 'rating_awal', 'jumlah_ulasan_awal',
     ];
     protected $useTimestamps = true;
 
@@ -87,5 +87,42 @@ class HotelModel extends Model
             ->where('id !=', $hotel['id'])
             ->orderBy('rating DESC NULLS LAST', '', false)
             ->findAll($n);
+    }
+
+    /** Sinkronisasi rating dan jumlah ulasan hotel secara dinamis dari gabungan data awal + ulasan pengguna. */
+    public function sinkronRating(int $hotelId): void
+    {
+        $hotel = $this->find($hotelId);
+        if (! $hotel) {
+            return;
+        }
+
+        $db = \Config\Database::connect();
+        $r = $db->table('reviews')
+            ->select('COUNT(*) AS total_user, SUM(rating) AS sum_user_rating')
+            ->where('hotel_id', $hotelId)
+            ->get()
+            ->getRowArray();
+
+        $userCount = (int) ($r['total_user'] ?? 0);
+        $userSum   = (float) ($r['sum_user_rating'] ?? 0);
+
+        $baseRating = ($hotel['rating_awal'] !== null && $hotel['rating_awal'] !== '') ? (float) $hotel['rating_awal'] : null;
+        $baseCount  = ($hotel['jumlah_ulasan_awal'] !== null && $hotel['jumlah_ulasan_awal'] !== '') ? (int) $hotel['jumlah_ulasan_awal'] : 0;
+
+        $totalCount = $baseCount + $userCount;
+
+        if ($totalCount > 0) {
+            $baseScore   = ($baseRating !== null && $baseCount > 0) ? ($baseRating * $baseCount) : 0;
+            $totalScore  = $baseScore + $userSum;
+            $finalRating = round($totalScore / $totalCount, 1);
+        } else {
+            $finalRating = null;
+        }
+
+        $this->update($hotelId, [
+            'rating'        => $finalRating,
+            'jumlah_ulasan' => $totalCount,
+        ]);
     }
 }

@@ -22,7 +22,7 @@
             <span class="muted small">Foto utama hotel yang tampil di kartu hotel dan background header detail hotel (JPG, PNG, WEBP).</span>
             <?php if (! empty($h['foto'])): ?>
                 <div style="display:flex;align-items:center;gap:1rem;margin:0.5rem 0">
-                    <img src="<?= base_url(esc($h['foto'])) ?>" alt="Cover" style="height:90px;width:140px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1">
+                    <img src="<?= foto_url($h['foto']) ?>" alt="Cover" style="height:90px;width:140px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1">
                     <label style="font-size:0.85rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:0.4rem">
                         <input type="checkbox" name="hapus_foto" value="1"> Hapus foto sampul saat ini
                     </label>
@@ -42,7 +42,7 @@
                 <div style="display:flex;flex-wrap:wrap;gap:0.8rem;margin:0.6rem 0">
                     <?php foreach ($facs as $fItem): ?>
                         <div style="border:1px solid #cbd5e1;border-radius:8px;padding:0.4rem;background:#fff;display:flex;flex-direction:column;align-items:center;gap:0.3rem">
-                            <img src="<?= base_url(esc($fItem['url'])) ?>" alt="Fasilitas" style="width:90px;height:70px;object-fit:cover;border-radius:6px">
+                            <img src="<?= foto_url($fItem['url']) ?>" alt="Fasilitas" style="width:90px;height:70px;object-fit:cover;border-radius:6px">
                             <label style="font-size:0.75rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:0.2rem">
                                 <input type="checkbox" name="hapus_foto_fasilitas[]" value="<?= esc($fItem['url'], 'attr') ?>"> Hapus
                             </label>

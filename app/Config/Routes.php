@@ -13,9 +13,12 @@ $routes->get('peta', 'Peta::index');
 $routes->get('kuliner', 'Kuliner::index');
 $routes->get('cari', 'Kuliner::cari');
 
-$routes->get('bandingkan', 'Bandingkan::index');
-$routes->get('bandingkan/toggle/(:num)', 'Bandingkan::toggle/$1');
-$routes->get('bandingkan/kosongkan', 'Bandingkan::kosongkan');
+$routes->get('bandingkan', static function () {
+    return redirect()->to(site_url('penginapan'));
+});
+$routes->get('bandingkan/(:any)', static function () {
+    return redirect()->to(site_url('penginapan'));
+});
 
 // ---- Akun ----
 $routes->match(['get', 'post'], 'masuk', 'Auth::masuk');
@@ -29,6 +32,13 @@ $routes->post('favorit/(:num)', 'Interaksi::favorit/$1');
 $routes->post('penginapan/(:num)/ulasan', 'Interaksi::ulasan/$1');
 $routes->post('penginapan/(:num)/ulasan/hapus', 'Interaksi::hapusUlasan/$1');
 $routes->post('penginapan/(:num)/pesan', 'Interaksi::pesan/$1');
+$routes->post('penginapan/(:num)/tanya', 'Interaksi::tanya/$1');
+$routes->post('tanya/(:num)/edit', 'Interaksi::editPertanyaan/$1');
+$routes->post('tanya/(:num)/hapus', 'Interaksi::hapusPertanyaan/$1');
+$routes->post('tanya/(:num)/jawab', 'Interaksi::jawab/$1');
+$routes->post('tanya/(:num)/jawab/(:segment)/edit', 'Interaksi::editJawaban/$1/$2');
+$routes->post('tanya/(:num)/jawab/(:segment)/hapus', 'Interaksi::hapusJawaban/$1/$2');
+$routes->post('notifikasi/baca', 'Interaksi::bacaNotifikasi');
 
 // ---- Admin ----
 $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static function (RouteCollection $routes) {

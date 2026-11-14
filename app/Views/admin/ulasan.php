@@ -14,9 +14,9 @@
             <div class="rev__media">
                 <?php foreach ($admMedia as $am): ?>
                     <?php if (($am['type'] ?? '') === 'video'): ?>
-                        <div class="rev__video-box"><video src="<?= base_url(esc($am['url'])) ?>" controls preload="metadata"></video></div>
+                        <div class="rev__video-box"><video src="<?= foto_url($am['url']) ?>" controls preload="metadata"></video></div>
                     <?php else: ?>
-                        <a href="<?= base_url(esc($am['url'])) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas"><img src="<?= base_url(esc($am['url'])) ?>" alt="Fasilitas" loading="lazy"></a>
+                        <a href="<?= foto_url($am['url']) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas"><img src="<?= foto_url($am['url']) ?>" alt="Fasilitas" loading="lazy"></a>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>

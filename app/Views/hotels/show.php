@@ -3,16 +3,15 @@
 <?php
 $u      = session('user');
 $isFav  = in_array((int) $h['id'], favorit_ids(), true);
-$inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
 ?>
-<section class="detail__hero <?= ! empty($h['foto']) ? 'detail__hero--has-cover' : '' ?>" style="--h: <?= hue_hotel($h) ?><?= ! empty($h['foto']) ? '; background-image: linear-gradient(to bottom, rgba(10,46,42,0.7), rgba(10,46,42,0.92)), url(\'' . base_url(esc($h['foto'])) . '\'); background-size: cover; background-position: center;' : '' ?>">
+<section class="detail__hero <?= ! empty($h['foto']) ? 'detail__hero--has-cover' : '' ?>" style="--h: <?= hue_hotel($h) ?><?= ! empty($h['foto']) ? '; background-image: linear-gradient(to bottom, rgba(10,46,42,0.7), rgba(10,46,42,0.92)), url(\'' . foto_url($h['foto']) . '\'); background-size: cover; background-position: center;' : '' ?>">
     <div class="wrap">
         <a class="back" href="<?= site_url('penginapan') ?>">← Semua penginapan</a>
         <?php if (! empty($h['kecamatan'])): ?><p class="eyebrow eyebrow--gold"><?= esc($h['kecamatan']) ?>, Medan</p><?php endif; ?>
         <h1><?= esc($h['nama']) ?></h1>
         <div class="detail__badges">
             <?= rating_label($h['rating']) ?>
-            <?php if ($h['jumlah_ulasan'] !== null): ?><span class="chip"><?= number_format((int) $h['jumlah_ulasan'], 0, ',', '.') ?> ulasan Tripadvisor</span><?php endif; ?>
+            <?php if ($h['jumlah_ulasan'] !== null): ?><span class="chip"><?= number_format((int) $h['jumlah_ulasan'], 0, ',', '.') ?> ulasan</span><?php endif; ?>
             <span class="chip"><?= $h['sarapan'] === 'Tidak' ? 'Tanpa sarapan' : ($h['sarapan'] === 'All-in' ? 'All-inclusive' : 'Termasuk sarapan') ?></span>
         </div>
     </div>
@@ -72,12 +71,12 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                         <div class="media-gallery__item">
                             <?php if ($sf['type'] === 'video'): ?>
                                 <div class="media-video-wrap">
-                                    <video src="<?= base_url(esc($sf['url'])) ?>" controls preload="metadata"></video>
+                                    <video src="<?= foto_url($sf['url']) ?>" controls preload="metadata"></video>
                                     <span class="media-badge">🎥 Video Fasilitas</span>
                                 </div>
                             <?php else: ?>
-                                <a href="<?= base_url(esc($sf['url'])) ?>" class="media-img-link js-lightbox" data-gallery="fasilitas-utama" data-caption="Fasilitas <?= esc($h['nama']) ?> · <?= esc($sf['caption']) ?>" title="Klik untuk melihat foto">
-                                    <img src="<?= base_url(esc($sf['url'])) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
+                                <a href="<?= foto_url($sf['url']) ?>" class="media-img-link js-lightbox" data-gallery="fasilitas-utama" data-caption="Fasilitas <?= esc($h['nama']) ?> · <?= esc($sf['caption']) ?>" title="Klik untuk melihat foto">
+                                    <img src="<?= foto_url($sf['url']) ?>" alt="Fasilitas <?= esc($h['nama']) ?>" loading="lazy">
                                     <span class="media-badge <?= $sf['sumber'] === 'hotel' ? 'media-badge--hotel' : '' ?>">
                                         <?= $sf['sumber'] === 'hotel' ? '🏢 Pihak Hotel' : '📷 Oleh Tamu' ?>
                                     </span>
@@ -138,11 +137,11 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                 <?php foreach ($rMedia as $rmItem): ?>
                                     <?php if (($rmItem['type'] ?? '') === 'video'): ?>
                                         <div class="rev__video-box">
-                                            <video src="<?= base_url(esc($rmItem['url'])) ?>" controls preload="metadata"></video>
+                                            <video src="<?= foto_url($rmItem['url']) ?>" controls preload="metadata"></video>
                                         </div>
                                     <?php else: ?>
-                                        <a href="<?= base_url(esc($rmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-<?= $r['id'] ?>" data-caption="Foto fasilitas ulasan dari <?= esc($r['penulis']) ?>" title="Klik untuk melihat foto">
-                                            <img src="<?= base_url(esc($rmItem['url'])) ?>" alt="Foto fasilitas ulasan" loading="lazy">
+                                        <a href="<?= foto_url($rmItem['url']) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-<?= $r['id'] ?>" data-caption="Foto fasilitas ulasan dari <?= esc($r['penulis']) ?>" title="Klik untuk melihat foto">
+                                            <img src="<?= foto_url($rmItem['url']) ?>" alt="Foto fasilitas ulasan" loading="lazy">
                                         </a>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
@@ -191,11 +190,11 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                     <?php foreach ($myMedia as $mmItem): ?>
                                         <?php if (($mmItem['type'] ?? '') === 'video'): ?>
                                             <div class="rev__video-box">
-                                                <video src="<?= base_url(esc($mmItem['url'])) ?>" controls preload="metadata"></video>
+                                                <video src="<?= foto_url($mmItem['url']) ?>" controls preload="metadata"></video>
                                             </div>
                                         <?php else: ?>
-                                            <a href="<?= base_url(esc($mmItem['url'])) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-saya" data-caption="Foto fasilitas ulasan Anda" title="Klik untuk melihat foto">
-                                                <img src="<?= base_url(esc($mmItem['url'])) ?>" alt="Foto fasilitas" loading="lazy">
+                                            <a href="<?= foto_url($mmItem['url']) ?>" class="rev__thumb js-lightbox" data-gallery="ulasan-saya" data-caption="Foto fasilitas ulasan Anda" title="Klik untuk melihat foto">
+                                                <img src="<?= foto_url($mmItem['url']) ?>" alt="Foto fasilitas" loading="lazy">
                                             </a>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
@@ -233,9 +232,9 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                                     <?php foreach ($myMedia as $idx => $mItem): ?>
                                         <div style="border:1px solid #cbd5e1;border-radius:8px;padding:.5rem;background:#fff;display:flex;flex-direction:column;align-items:center;gap:.3rem">
                                             <?php if (($mItem['type'] ?? '') === 'video'): ?>
-                                                <video src="<?= base_url(esc($mItem['url'])) ?>" style="width:80px;height:80px;object-fit:cover;border-radius:6px"></video>
+                                                <video src="<?= foto_url($mItem['url']) ?>" style="width:80px;height:80px;object-fit:cover;border-radius:6px"></video>
                                             <?php else: ?>
-                                                <img src="<?= base_url(esc($mItem['url'])) ?>" alt="Media" style="width:80px;height:80px;object-fit:cover;border-radius:6px">
+                                                <img src="<?= foto_url($mItem['url']) ?>" alt="Media" style="width:80px;height:80px;object-fit:cover;border-radius:6px">
                                             <?php endif; ?>
                                             <label style="font-size:.75rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:.2rem">
                                                 <input type="checkbox" name="hapus_media[]" value="<?= esc($mItem['url'], 'attr') ?>"> Hapus
@@ -304,20 +303,174 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
         </section>
 
         <section class="panel" id="tanya">
-            <h2>Tanya / pesan hotel ini</h2>
-            <p class="muted">Kirim pertanyaan atau rencana menginapmu. Admin akan membalas lewat email.</p>
-            <form class="form form--grid" method="post" action="<?= site_url('penginapan/' . $h['id'] . '/pesan') ?>">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem">
+                <h2 style="margin:0">💬 Tanya Jawab Seputar Hotel</h2>
+                <?php if (! empty($inquiries)): ?>
+                    <span class="chip"><?= count($inquiries) ?> Pertanyaan</span>
+                <?php endif; ?>
+            </div>
+            <p class="muted small" style="margin-top:0;margin-bottom:1.2rem">Punya pertanyaan seputar fasilitas, jam operasional, atau aturan hotel? Tanyakan di sini dan pihak hotel atau sesama pengunjung dapat menjawab!</p>
+
+            <!-- Form Ajukan Pertanyaan Baru -->
+            <form class="form" method="post" action="<?= site_url('penginapan/' . $h['id'] . '/tanya') ?>" style="background:#f8fafc;padding:1.2rem;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:1.8rem">
                 <?= token_field() ?>
                 <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-                <label>Nama<input type="text" name="nama" required maxlength="100" value="<?= old('nama', $u['nama'] ?? '') ?>"></label>
-                <label>Email<input type="email" name="email" required maxlength="190" value="<?= old('email', $u['email'] ?? '') ?>"></label>
-                <label>No. HP / WhatsApp<input type="text" name="telepon" maxlength="30" value="<?= old('telepon') ?>"></label>
-                <label>Jumlah tamu<input type="number" name="jumlah_tamu" min="1" max="20" value="<?= old('jumlah_tamu', 2) ?>"></label>
-                <label>Check-in<input type="date" name="tgl_checkin" min="<?= date('Y-m-d') ?>" value="<?= old('tgl_checkin') ?>"></label>
-                <label>Check-out<input type="date" name="tgl_checkout" min="<?= date('Y-m-d') ?>" value="<?= old('tgl_checkout') ?>"></label>
-                <label class="full">Pesan<textarea name="pesan" rows="3" maxlength="1000"><?= old('pesan') ?></textarea></label>
-                <div class="full"><button class="btn" type="submit">Kirim pesan</button></div>
+                <h3 style="margin-top:0;font-size:1.05rem;color:var(--teal)">Ajukan Pertanyaan Baru</h3>
+                <?php if (! $u): ?>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.6rem">
+                        <label>Nama Anda <span style="color:#ef4444">*</span>
+                            <input type="text" name="nama" required maxlength="100" placeholder="Nama Anda" value="<?= old('nama') ?>">
+                        </label>
+                        <label>Email (opsional)
+                            <input type="email" name="email" maxlength="190" placeholder="nama@email.com" value="<?= old('email') ?>">
+                        </label>
+                    </div>
+                <?php endif; ?>
+                <label style="margin-bottom:.6rem">Pertanyaan Anda
+                    <textarea name="pertanyaan" rows="2" minlength="5" maxlength="1000" required placeholder="Contoh: Apakah sarapan pagi tersedia menu halal? Jam berapa kolam renang buka?"><?= old('pertanyaan') ?></textarea>
+                </label>
+                <div>
+                    <button class="btn btn--sm" type="submit">Kirim Pertanyaan</button>
+                </div>
             </form>
+
+            <!-- Daftar Pertanyaan & Jawaban (Q&A) -->
+            <?php if (! empty($inquiries)): ?>
+                <div class="qna-list" style="display:flex;flex-direction:column;gap:1.2rem">
+                    <?php foreach ($inquiries as $inq): ?>
+                        <?php 
+                        $jawabanList = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
+                        // Sertakan juga balasan_admin legasi jika belum tercatat di array jawaban
+                        if (! empty($inq['balasan_admin'])) {
+                            $alreadyInList = false;
+                            foreach ($jawabanList as $jl) {
+                                if (($jl['isi'] ?? '') === $inq['balasan_admin']) {
+                                    $alreadyInList = true;
+                                    break;
+                                }
+                            }
+                            if (! $alreadyInList) {
+                                array_unshift($jawabanList, [
+                                    'id'         => 'admin_legacy',
+                                    'user_id'    => null,
+                                    'nama'       => 'Pengelola Hotel / Admin',
+                                    'role'       => 'admin',
+                                    'isi'        => $inq['balasan_admin'],
+                                    'created_at' => $inq['dibalas_at'] ?? $inq['updated_at'],
+                                ]);
+                            }
+                        }
+                        ?>
+                        <?php 
+                        $canManageInq = $u && ((int) ($inq['user_id'] ?? 0) === (int) $u['id'] || ($u['role'] ?? '') === 'admin');
+                        ?>
+                        <article class="qna-item" style="border:1px solid #e2e8f0;border-radius:12px;padding:1.1rem;background:#ffffff">
+                            <div style="display:flex;align-items:flex-start;gap:.8rem;margin-bottom:.6rem">
+                                <div style="width:36px;height:36px;border-radius:50%;background:#e0f2fe;color:#0369a1;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0">
+                                    <?= esc(strtoupper(substr($inq['nama'], 0, 1) ?: 'Q')) ?>
+                                </div>
+                                <div style="flex:1">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem">
+                                        <strong style="color:var(--text)"><?= esc($inq['nama']) ?></strong>
+                                        <div style="display:flex;align-items:center;gap:.4rem">
+                                            <span class="muted small"><?= tgl_id($inq['created_at']) ?></span>
+                                            <?php if ($canManageInq): ?>
+                                                <button type="button" class="btn btn--xs btn--ghost" onclick="toggleEditInq(<?= $inq['id'] ?>)" title="Edit Pertanyaan">✏️ Edit</button>
+                                                <form method="post" action="<?= site_url('tanya/' . $inq['id'] . '/hapus') ?>" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pertanyaan ini?')">
+                                                    <?= token_field() ?>
+                                                    <button type="submit" class="btn btn--xs btn--ghost" style="color:#dc2626;border-color:#fca5a5" title="Hapus Pertanyaan">🗑️ Hapus</button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <p id="inq-text-<?= $inq['id'] ?>" style="margin:.3rem 0 0;font-size:.98rem;color:#1e293b;font-weight:500;line-height:1.45"><?= nl2br(esc($inq['pesan'] ?: '(Pertanyaan kosong)')) ?></p>
+                                    <?php if ($canManageInq): ?>
+                                        <form id="edit-inq-<?= $inq['id'] ?>" method="post" action="<?= site_url('tanya/' . $inq['id'] . '/edit') ?>" style="display:none;margin-top:.6rem;background:#f8fafc;padding:.7rem;border-radius:8px;border:1px solid #cbd5e1">
+                                            <?= token_field() ?>
+                                            <label style="font-size:.85rem;font-weight:600;display:block;margin-bottom:.3rem;color:var(--teal)">Edit Pertanyaan:</label>
+                                            <textarea name="pertanyaan" rows="2" required minlength="5" maxlength="1000" style="width:100%;font-size:.9rem;padding:.5rem;border-radius:6px;border:1px solid #cbd5e1"><?= esc($inq['pesan']) ?></textarea>
+                                            <div style="display:flex;justify-content:flex-end;gap:.4rem;margin-top:.4rem">
+                                                <button type="button" class="btn btn--xs btn--ghost" onclick="toggleEditInq(<?= $inq['id'] ?>)">Batal</button>
+                                                <button type="submit" class="btn btn--xs">Simpan Perubahan</button>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Daftar Jawaban -->
+                            <?php if (! empty($jawabanList)): ?>
+                                <div class="qna-answers" style="margin-left:2.8rem;margin-top:.8rem;display:flex;flex-direction:column;gap:.6rem;border-left:2px solid #cbd5e1;padding-left:1rem">
+                                    <?php foreach ($jawabanList as $jw): ?>
+                                        <?php 
+                                        $isAdminJw = ($jw['role'] ?? '') === 'admin';
+                                        $canManageJw = $u && ((int) ($jw['user_id'] ?? 0) === (int) $u['id'] || ($u['role'] ?? '') === 'admin');
+                                        $jwKey = esc($jw['id'] ?? 'admin_legacy', 'attr');
+                                        ?>
+                                        <div style="background:<?= $isAdminJw ? '#f0fdf4' : '#f8fafc' ?>;border:1px solid <?= $isAdminJw ? '#bbf7d0' : '#e2e8f0' ?>;padding:.7rem .9rem;border-radius:8px">
+                                            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.2rem;flex-wrap:wrap">
+                                                <strong style="font-size:.88rem;color:<?= $isAdminJw ? '#15803d' : '#334155' ?>"><?= esc($jw['nama']) ?></strong>
+                                                <?php if ($isAdminJw): ?>
+                                                    <span class="badge" style="background:#22c55e;color:#fff;font-size:.7rem;padding:.15rem .45rem">Admin / Pengelola</span>
+                                                <?php else: ?>
+                                                    <span class="badge" style="background:#64748b;color:#fff;font-size:.7rem;padding:.15rem .45rem">Pengunjung</span>
+                                                <?php endif; ?>
+                                                <?php if (! empty($jw['created_at'])): ?>
+                                                    <span class="muted small" style="margin-left:auto"><?= tgl_id($jw['created_at']) ?></span>
+                                                <?php endif; ?>
+                                                <?php if ($canManageJw): ?>
+                                                    <div style="display:inline-flex;gap:.3rem;margin-left:<?= empty($jw['created_at']) ? 'auto' : '.3rem' ?>">
+                                                        <button type="button" class="btn btn--xs btn--ghost" onclick="toggleEditAns('<?= $jwKey ?>')" title="Edit Jawaban" style="padding:.1rem .35rem;font-size:.72rem">✏️ Edit</button>
+                                                        <form method="post" action="<?= site_url('tanya/' . $inq['id'] . '/jawab/' . ($jw['id'] ?? 'admin_legacy') . '/hapus') ?>" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus jawaban ini?')">
+                                                            <?= token_field() ?>
+                                                            <button type="submit" class="btn btn--xs btn--ghost" style="padding:.1rem .35rem;font-size:.72rem;color:#dc2626;border-color:#fca5a5" title="Hapus Jawaban">🗑️</button>
+                                                        </form>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <p id="ans-text-<?= $jwKey ?>" style="margin:0;font-size:.92rem;color:<?= $isAdminJw ? '#14532d' : '#1e293b' ?>;line-height:1.4"><?= nl2br(esc($jw['isi'])) ?></p>
+                                            <?php if ($canManageJw): ?>
+                                                <form id="edit-ans-<?= $jwKey ?>" method="post" action="<?= site_url('tanya/' . $inq['id'] . '/jawab/' . ($jw['id'] ?? 'admin_legacy') . '/edit') ?>" style="display:none;margin-top:.5rem;background:#ffffff;padding:.6rem;border-radius:6px;border:1px solid #cbd5e1">
+                                                    <?= token_field() ?>
+                                                    <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.3rem;color:var(--teal)">Edit Jawaban:</label>
+                                                    <textarea name="jawaban" rows="2" required minlength="3" maxlength="1500" style="width:100%;font-size:.88rem;padding:.4rem;border-radius:4px;border:1px solid #cbd5e1"><?= esc($jw['isi']) ?></textarea>
+                                                    <div style="display:flex;justify-content:flex-end;gap:.3rem;margin-top:.4rem">
+                                                        <button type="button" class="btn btn--xs btn--ghost" onclick="toggleEditAns('<?= $jwKey ?>')">Batal</button>
+                                                        <button type="submit" class="btn btn--xs">Simpan Jawaban</button>
+                                                    </div>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Formulir Jawab Pertanyaan -->
+                            <div style="margin-left:2.8rem;margin-top:.8rem">
+                                <?php if ($u): ?>
+                                    <details style="margin-top:.4rem">
+                                        <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--teal)">💬 Beri Jawaban / Tanggapan</summary>
+                                        <form method="post" action="<?= site_url('tanya/' . $inq['id'] . '/jawab') ?>" style="margin-top:.6rem;display:flex;flex-direction:column;gap:.4rem">
+                                            <?= token_field() ?>
+                                            <textarea name="jawaban" rows="2" required placeholder="Tulis jawabanmu untuk membantu penanya..." style="font-size:.9rem;padding:.5rem;border-radius:6px;border:1px solid #cbd5e1;width:100%"></textarea>
+                                            <div style="display:flex;justify-content:flex-end">
+                                                <button class="btn btn--sm" type="submit">Kirim Jawaban</button>
+                                            </div>
+                                        </form>
+                                    </details>
+                                <?php else: ?>
+                                    <p class="muted small" style="margin:0"><a class="link" href="<?= site_url('masuk') ?>">Masuk</a> untuk menjawab pertanyaan ini.</p>
+                                <?php endif; ?>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div style="text-align:center;padding:2rem 1rem;background:#f8fafc;border-radius:12px;border:1px dashed #cbd5e1">
+                    <p style="margin:0;font-size:1.05rem;color:#475569">Belum ada pertanyaan seputar hotel ini.</p>
+                    <p class="muted small" style="margin:.3rem 0 0">Jadilah yang pertama mengajukan pertanyaan di formulir atas!</p>
+                </div>
+            <?php endif; ?>
         </section>
     </div>
 
@@ -327,7 +480,6 @@ $inCmp  = in_array((int) $h['id'], bandingkan_ids(), true);
                 <?= token_field() ?>
                 <button class="btn btn--block <?= $isFav ? '' : 'btn--ghost' ?>" type="submit"><?= $isFav ? '♥ Tersimpan di favorit' : '♡ Simpan ke favorit' ?></button>
             </form>
-            <a class="btn btn--block btn--ghost" style="margin-top:.6rem" href="<?= site_url('bandingkan/toggle/' . $h['id']) ?>"><?= $inCmp ? '✓ Ada di perbandingan' : '⇄ Tambah ke perbandingan' ?></a>
         </div>
         <?php if ($serupa): ?>
             <h2>Di kecamatan yang sama</h2>
@@ -480,5 +632,23 @@ function toggleEditUlasan() {
         else if (e.key === 'ArrowRight') nextImage();
     });
 })();
+
+function toggleEditInq(id) {
+    var form = document.getElementById('edit-inq-' + id);
+    var text = document.getElementById('inq-text-' + id);
+    if (!form) return;
+    var isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    if (text) text.style.display = isHidden ? 'none' : 'block';
+}
+
+function toggleEditAns(id) {
+    var form = document.getElementById('edit-ans-' + id);
+    var text = document.getElementById('ans-text-' + id);
+    if (!form) return;
+    var isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'block' : 'none';
+    if (text) text.style.display = isHidden ? 'none' : 'block';
+}
 </script>
 <?= $this->endSection() ?>
