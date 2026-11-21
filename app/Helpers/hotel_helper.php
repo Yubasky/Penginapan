@@ -77,8 +77,14 @@ if (! function_exists('favorit_ids')) {
         $ids = [];
         $u   = session('user');
         if ($u) {
-            $rows = db_connect()->table('favorites')->select('hotel_id')->where('user_id', (int) $u['id'])->get()->getResultArray();
-            $ids  = array_map('intval', array_column($rows, 'hotel_id'));
+            $sessKey = 'user_fav_ids_' . $u['id'];
+            if (session()->has($sessKey)) {
+                $ids = (array) session($sessKey);
+            } else {
+                $rows = db_connect()->table('favorites')->select('hotel_id')->where('user_id', (int) $u['id'])->get()->getResultArray();
+                $ids  = array_map('intval', array_column($rows, 'hotel_id'));
+                session()->set($sessKey, $ids);
+            }
         }
         return $ids;
     }
@@ -110,6 +116,14 @@ if (! function_exists('ambil_notifikasi_user')) {
         }
 
         $userId = (int) $user['id'];
+
+        // Cache notifikasi di session selama 25 detik agar tidak query berulang ke Supabase di setiap klik halaman
+        $cacheKey = 'notif_cache_' . $userId;
+        $cachedTime = (int) session($cacheKey . '_time');
+        if (time() - $cachedTime < 25 && session()->has($cacheKey)) {
+            return session($cacheKey);
+        }
+
         $db = \Config\Database::connect();
 
         // Cari semua pertanyaan yang diajukan oleh user ini
@@ -215,10 +229,15 @@ if (! function_exists('ambil_notifikasi_user')) {
             return strtotime($b['waktu']) <=> strtotime($a['waktu']);
         });
 
-        return [
+        $result = [
             'items'  => array_slice($notifications, 0, 10),
             'unread' => $unreadCount,
         ];
+
+        session()->set($cacheKey, $result);
+        session()->set($cacheKey . '_time', time());
+
+        return $result;
     }
 }
 

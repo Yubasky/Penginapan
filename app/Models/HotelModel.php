@@ -19,6 +19,9 @@ class HotelModel extends Model
     /** Terapkan filter dari query string (dipakai web & API). */
     public function filtered(array $f): static
     {
+        // Hanya ambil kolom penting agar tidak menarik Base64 foto fasilitas yang besar
+        $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude');
+
         $q = trim((string) ($f['q'] ?? ''));
         if ($q !== '') {
             $this->groupStart()
@@ -55,24 +58,43 @@ class HotelModel extends Model
 
     public function stats(): array
     {
-        return $this->db->table($this->table)
+        $hit = cache('stats_hotel');
+        if (is_array($hit)) {
+            return $hit;
+        }
+
+        $data = $this->db->table($this->table)
             ->select('COUNT(*) AS total, COUNT(rating) AS berating, ROUND(AVG(rating), 2) AS rata, COALESCE(SUM(jumlah_ulasan), 0) AS ulasan, COUNT(DISTINCT kecamatan) AS kecamatan')
-            ->get()->getRowArray();
+            ->get()->getRowArray() ?: [];
+
+        cache()->save('stats_hotel', $data, 600);
+
+        return $data;
     }
 
     public function daftarKecamatan(): array
     {
-        return $this->db->table($this->table)
+        $hit = cache('daftar_kecamatan');
+        if (is_array($hit)) {
+            return $hit;
+        }
+
+        $data = $this->db->table($this->table)
             ->select('kecamatan, COUNT(*) AS jumlah')
             ->where('kecamatan IS NOT NULL', null, false)
             ->groupBy('kecamatan')
             ->orderBy('jumlah', 'DESC')
-            ->get()->getResultArray();
+            ->get()->getResultArray() ?: [];
+
+        cache()->save('daftar_kecamatan', $data, 600);
+
+        return $data;
     }
 
     public function unggulan(int $n = 6): array
     {
-        return $this->where('rating >=', 4.5)
+        return $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto')
+            ->where('rating >=', 4.5)
             ->where('jumlah_ulasan >=', 100)
             ->orderBy('jumlah_ulasan', 'DESC')
             ->findAll($n);
@@ -83,7 +105,8 @@ class HotelModel extends Model
         if (empty($hotel['kecamatan'])) {
             return [];
         }
-        return $this->where('kecamatan', $hotel['kecamatan'])
+        return $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto')
+            ->where('kecamatan', $hotel['kecamatan'])
             ->where('id !=', $hotel['id'])
             ->orderBy('rating DESC NULLS LAST', '', false)
             ->findAll($n);

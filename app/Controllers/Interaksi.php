@@ -36,6 +36,7 @@ class Interaksi extends AppBase
             db_connect()->table('favorites')->insert(['user_id' => $uid, 'hotel_id' => $id]);
             $msg = 'Disimpan ke favorit.';
         }
+        session()->remove('user_fav_ids_' . $uid);
 
         return redirect()->back()->with('ok', $msg);
     }
@@ -434,6 +435,8 @@ class Interaksi extends AppBase
             $now = date('Y-m-d H:i:s');
             db_connect()->table('users')->where('id', (int) $u['id'])->update(['notif_dibaca_at' => $now]);
             session()->set('notif_read_at', $now);
+            session()->remove('notif_cache_' . $u['id']);
+            session()->remove('notif_cache_' . $u['id'] . '_time');
         }
         return $this->response->setJSON(['status' => 'ok']);
     }

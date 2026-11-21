@@ -23,7 +23,7 @@ class Peta extends AppBase
                 ->orLike('alamat', $f['q'], 'both', null, true)
             ->groupEnd();
         }
-        $rows  = $b->orderBy('peringkat')->findAll();
+        $rows  = $b->select('nama, latitude, longitude, rating, kecamatan, alamat, slug')->orderBy('peringkat')->findAll();
         $titik = array_map(static fn ($h) => [
             'nama'      => $h['nama'],
             'lat'       => (float) $h['latitude'],
@@ -34,12 +34,18 @@ class Peta extends AppBase
             'url'       => site_url('penginapan/' . $h['slug']),
         ], $rows);
 
+        $totalGeo = cache('total_geo');
+        if (! is_numeric($totalGeo)) {
+            $totalGeo = db_connect()->table('hotels')->where('latitude IS NOT NULL', null, false)->countAllResults();
+            cache()->save('total_geo', $totalGeo, 600);
+        }
+
         return view('peta', [
             'title'     => 'Peta Penginapan — Singgah Medan',
             'titik'     => $titik,
             'f'         => $f,
             'kecamatan' => $m->daftarKecamatan(),
-            'totalGeo'  => db_connect()->table('hotels')->where('latitude IS NOT NULL', null, false)->countAllResults(),
+            'totalGeo'  => $totalGeo,
         ]);
     }
 }

@@ -25,7 +25,7 @@ class KulinerClient
             if ($key !== '') {
                 $headers['X-API-KEY'] = $key;
             }
-            $client = \Config\Services::curlrequest(['timeout' => 6, 'http_errors' => false]);
+            $client = \Config\Services::curlrequest(['timeout' => 2, 'connect_timeout' => 1, 'http_errors' => false]);
             $res    = $client->get(rtrim((string) env('kuliner.apiUrl'), '/') . '/api/kuliner', [
                 'query'   => $query,
                 'headers' => $headers,
