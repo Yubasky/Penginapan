@@ -16,41 +16,44 @@
     <label>Longitude<input type="text" name="longitude" inputmode="decimal" placeholder="98.672226" value="<?= esc($h['longitude'] ?? '', 'attr') ?>"></label>
     <label class="full">Link Tripadvisor<input type="text" name="link_tripadvisor" maxlength="1000" value="<?= esc($h['link_tripadvisor'] ?? '', 'attr') ?>"></label>
 
-    <!-- Foto Sampul / Background Hotel -->
+    <!-- Link Foto Sampul / Background Hotel -->
     <div class="full" style="border-top:1px solid var(--line);padding-top:1rem">
-        <label>Foto Sampul / Background Hotel
-            <span class="muted small">Foto utama hotel yang tampil di kartu hotel dan background header detail hotel (JPG, PNG, WEBP).</span>
+        <label>Link Foto Sampul / Background Hotel (URL)
+            <span class="muted small">Masukkan link URL gambar online (misal dari Unsplash, hosting gambar, atau website hotel). Tampil di kartu hotel dan background header.</span>
+            <input type="url" name="foto" placeholder="https://images.unsplash.com/... atau https://..." value="<?= esc(old('foto', $h['foto'] ?? '')) ?>" maxlength="1000">
             <?php if (! empty($h['foto'])): ?>
-                <div style="display:flex;align-items:center;gap:1rem;margin:0.5rem 0">
-                    <img src="<?= foto_url($h['foto']) ?>" alt="Cover" style="height:90px;width:140px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1">
+                <div style="display:flex;align-items:center;gap:1rem;margin-top:0.5rem">
+                    <img src="<?= foto_url($h['foto']) ?>" alt="Cover" style="height:80px;width:130px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1" onerror="this.style.display='none'">
                     <label style="font-size:0.85rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:0.4rem">
                         <input type="checkbox" name="hapus_foto" value="1"> Hapus foto sampul saat ini
                     </label>
                 </div>
             <?php endif; ?>
-            <input type="file" name="foto" accept="image/*">
         </label>
     </div>
 
-    <!-- Foto Fasilitas Hotel dari Pihak Hotel / Admin -->
+    <!-- Link Foto Fasilitas Hotel -->
     <div class="full" style="border-top:1px solid var(--line);padding-top:1rem">
-        <label>Foto Fasilitas Hotel (Resmi dari Pihak Hotel / Admin)
-            <span class="muted small">Unggah dokumentasi resmi fasilitas hotel (kamar, sarapan, kolam renang, gym, lobby). Bisa pilih beberapa foto sekaligus.</span>
-            <?php 
-            $facs = ! empty($h['foto_fasilitas']) ? (json_decode($h['foto_fasilitas'], true) ?: []) : [];
-            if ($facs): ?>
-                <div style="display:flex;flex-wrap:wrap;gap:0.8rem;margin:0.6rem 0">
+        <?php 
+        $facs = ! empty($h['foto_fasilitas']) ? (json_decode($h['foto_fasilitas'], true) ?: []) : [];
+        $facText = '';
+        if ($facs) {
+            $urls = array_filter(array_column($facs, 'url'));
+            $facText = implode("\n", $urls);
+        }
+        ?>
+        <label>Link Foto Fasilitas Hotel (1 baris = 1 link URL)
+            <span class="muted small">Masukkan link foto dokumentasi fasilitas resmi (kamar, sarapan, kolam renang, toilet, dsb.). Tulis 1 link per baris.</span>
+            <textarea name="foto_fasilitas" rows="4" placeholder="https://images.unsplash.com/...&#10;https://example.com/kolam-renang.jpg"><?= esc(old('foto_fasilitas', $facText)) ?></textarea>
+            <?php if ($facs): ?>
+                <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.6rem">
                     <?php foreach ($facs as $fItem): ?>
-                        <div style="border:1px solid #cbd5e1;border-radius:8px;padding:0.4rem;background:#fff;display:flex;flex-direction:column;align-items:center;gap:0.3rem">
-                            <img src="<?= foto_url($fItem['url']) ?>" alt="Fasilitas" style="width:90px;height:70px;object-fit:cover;border-radius:6px">
-                            <label style="font-size:0.75rem;color:#dc2626;cursor:pointer;flex-direction:row;align-items:center;gap:0.2rem">
-                                <input type="checkbox" name="hapus_foto_fasilitas[]" value="<?= esc($fItem['url'], 'attr') ?>"> Hapus
-                            </label>
-                        </div>
+                        <?php if (! empty($fItem['url'])): ?>
+                            <img src="<?= foto_url($fItem['url']) ?>" alt="Fasilitas" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1" onerror="this.style.display='none'">
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-            <input type="file" name="foto_fasilitas[]" multiple accept="image/*">
         </label>
     </div>
 

@@ -74,19 +74,6 @@
                         </div>
                         <?php if (! empty($r['judul'])): ?><p class="rev__t" style="font-weight:600;margin-top:.4rem"><?= esc($r['judul']) ?></p><?php endif; ?>
                         <p style="margin-top:.3rem"><?= nl2br(esc($r['isi'])) ?></p>
-                        <?php 
-                        $uMedia = ! empty($r['media']) ? (json_decode($r['media'], true) ?: []) : [];
-                        if ($uMedia): ?>
-                            <div class="rev__media" style="margin-top:.8rem">
-                                <?php foreach ($uMedia as $um): ?>
-                                    <?php if (($um['type'] ?? '') === 'video'): ?>
-                                        <div class="rev__video-box"><video src="<?= foto_url($um['url']) ?>" controls preload="metadata"></video></div>
-                                    <?php else: ?>
-                                        <a href="<?= foto_url($um['url']) ?>" target="_blank" rel="noopener" class="rev__thumb" title="Lihat foto fasilitas"><img src="<?= foto_url($um['url']) ?>" alt="Fasilitas" loading="lazy"></a>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>

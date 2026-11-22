@@ -63,53 +63,12 @@ class Interaksi extends AppBase
         $uid  = (int) $this->user()['id'];
         $lama = $m->where('hotel_id', $id)->where('user_id', $uid)->first();
 
-        // Olah media lama jika sedang mengedit ulasan
-        $mediaList = [];
-        if ($lama && ! empty($lama['media'])) {
-            $existing = json_decode($lama['media'], true) ?: [];
-            $hapusMedia = (array) $this->request->getPost('hapus_media');
-            foreach ($existing as $ex) {
-                if (! in_array($ex['url'], $hapusMedia, true)) {
-                    $mediaList[] = $ex;
-                }
-            }
-        }
-
-        // Olah file foto/video yang baru diunggah (Base64 Cloud Supabase)
-        $files = $this->request->getFileMultiple('media');
-        if ($files) {
-            foreach ($files as $file) {
-                if ($file->isValid() && ! $file->hasMoved()) {
-                    $mime = $file->getMimeType() ?: 'image/jpeg';
-                    $ext  = strtolower($file->getClientExtension() ?: $file->guessExtension() ?: '');
-                    $isImg = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif']);
-                    $isVid = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'webm', 'mov', 'quicktime']);
-
-                    if (! $isImg && ! $isVid) {
-                        return redirect()->back()->withInput()->with('error', 'Format berkas "' . esc($file->getClientName()) . '" tidak didukung. Harap unggah foto (JPG, PNG, WEBP) atau video (MP4, WEBM).');
-                    }
-                    if ($file->getSizeByUnit('mb') > 20) {
-                        return redirect()->back()->withInput()->with('error', 'Berkas "' . esc($file->getClientName()) . '" terlalu besar (maksimal 20MB).');
-                    }
-
-                    $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getTempName()));
-
-                    $mediaList[] = [
-                        'url'  => $base64,
-                        'type' => $isVid ? 'video' : 'image',
-                        'nama' => $file->getClientName(),
-                    ];
-                }
-            }
-        }
-
         $data = [
             'hotel_id' => $id,
             'user_id'  => $uid,
             'rating'   => (int) $this->request->getPost('rating'),
             'judul'    => $this->nullable($this->request->getPost('judul')),
             'isi'      => trim((string) $this->request->getPost('isi')),
-            'media'    => ! empty($mediaList) ? json_encode($mediaList) : null,
         ];
 
         if ($lama) {

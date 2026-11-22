@@ -18,6 +18,7 @@ class Hotels extends AppBase
             'jumlah_ulasan'    => 'permit_empty|integer|greater_than_equal_to[0]',
             'sarapan'          => 'required|in_list[Tidak,Ya,All-in]',
             'link_tripadvisor' => 'permit_empty|valid_url_strict|max_length[1000]',
+            'foto'             => 'permit_empty|max_length[1000]',
             'latitude'         => 'permit_empty|decimal|greater_than_equal_to[-90]|less_than_equal_to[90]',
             'longitude'        => 'permit_empty|decimal|greater_than_equal_to[-180]|less_than_equal_to[180]',
         ];
@@ -106,48 +107,27 @@ class Hotels extends AppBase
             throw PageNotFoundException::forPageNotFound();
         }
 
-        // 1. Olah Foto Sampul / Background Hotel (Base64 Cloud Supabase)
+        // 1. Link Foto Sampul / Background Hotel (URL Link)
+        $fotoUrl = trim((string) $this->request->getPost('foto'));
         if ($this->request->getPost('hapus_foto')) {
             $data['foto'] = null;
         } else {
-            $data['foto'] = $hotelLama['foto'] ?? null;
+            $data['foto'] = $fotoUrl !== '' ? $fotoUrl : ($hotelLama['foto'] ?? null);
         }
 
-        $fileFoto = $this->request->getFile('foto');
-        if ($fileFoto && $fileFoto->isValid() && ! $fileFoto->hasMoved()) {
-            $ext  = strtolower($fileFoto->getClientExtension() ?: $fileFoto->guessExtension() ?: '');
-            $mime = $fileFoto->getMimeType() ?: 'image/jpeg';
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                $data['foto'] = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fileFoto->getTempName()));
-            }
-        }
-
-        // 2. Olah Foto Fasilitas Resmi Hotel dari Admin (Base64 Cloud Supabase)
+        // 2. Link Foto Fasilitas Resmi Hotel dari Admin (1 baris 1 link URL)
+        $rawFac = trim((string) $this->request->getPost('foto_fasilitas'));
         $facList = [];
-        if ($hotelLama && ! empty($hotelLama['foto_fasilitas'])) {
-            $existingFac = json_decode($hotelLama['foto_fasilitas'], true) ?: [];
-            $hapusFac    = (array) $this->request->getPost('hapus_foto_fasilitas');
-            foreach ($existingFac as $ef) {
-                if (! in_array($ef['url'], $hapusFac, true)) {
-                    $facList[] = $ef;
-                }
-            }
-        }
-
-        $filesFac = $this->request->getFileMultiple('foto_fasilitas');
-        if ($filesFac) {
-            foreach ($filesFac as $ff) {
-                if ($ff->isValid() && ! $ff->hasMoved()) {
-                    $ext  = strtolower($ff->getClientExtension() ?: $ff->guessExtension() ?: '');
-                    $mime = $ff->getMimeType() ?: 'image/jpeg';
-                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-                        $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($ff->getTempName()));
-                        $facList[] = [
-                            'url'  => $base64,
-                            'type' => 'image',
-                            'nama' => $ff->getClientName(),
-                        ];
-                    }
+        if ($rawFac !== '') {
+            $lines = preg_split('/[\r\n]+/', $rawFac);
+            foreach ($lines as $line) {
+                $u = trim($line);
+                if ($u !== '') {
+                    $facList[] = [
+                        'url'     => $u,
+                        'type'    => 'image',
+                        'caption' => 'Fasilitas ' . $data['nama'],
+                    ];
                 }
             }
         }
