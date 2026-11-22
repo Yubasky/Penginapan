@@ -212,9 +212,25 @@ class Hotels extends AppBase
             }
             $d['sarapan'] = $d['sarapan'] ?? 'Tidak';
 
-            $ada = ! empty($d['slug']) ? $m->where('slug', $d['slug'])->first() : $m->where('nama', $d['nama'])->first();
+            $ada = null;
+            if (! empty($d['slug'])) {
+                $ada = $m->where('slug', $d['slug'])->first();
+            }
+            if (! $ada && ! empty($d['nama'])) {
+                $ada = $m->where('LOWER(TRIM(nama))', strtolower(trim($d['nama'])))->first();
+            }
+
             if ($ada) {
-                $m->update($ada['id'], $d);
+                // Perbarui hanya kolom yang ada isinya di CSV (agar data penting tidak terhapus)
+                $updateData = [];
+                foreach ($d as $col => $val) {
+                    if ($val !== null && $val !== '') {
+                        $updateData[$col] = $val;
+                    }
+                }
+                if (! empty($updateData)) {
+                    $m->update($ada['id'], $updateData);
+                }
                 $ubah++;
             } else {
                 $d['peringkat'] = $d['peringkat'] ?? ++$maks;
