@@ -261,7 +261,7 @@ window.addEventListener('click', function(e) {
             <p>Rating &amp; ulasan: Tripadvisor (diambil 8 Nov 2026). Harga per malam tidak tersedia.</p>
         </div>
     </div>
-    <div class="wrap foot__copy">© <?= date('Y') ?> Singgah Medan · Proyek kelompok</div>
+    <div class="wrap foot__copy">© 2026 Singgah Medan</div>
 </footer>
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>

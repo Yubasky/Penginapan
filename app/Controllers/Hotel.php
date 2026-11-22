@@ -14,12 +14,42 @@ class Hotel extends AppBase
     {
         $m = new HotelModel();
 
+        $sortParam = $this->request->getGet('sort');
+        $hasFilter = (
+            trim((string) $this->request->getGet('q')) !== '' ||
+            ! empty($this->request->getGet('kecamatan')) ||
+            ! empty($this->request->getGet('sarapan')) ||
+            ! empty($this->request->getGet('rating_min'))
+        );
+
+        if ($sortParam !== null && $sortParam !== '') {
+            $sort = (string) $sortParam;
+        } else {
+            // Bila ada filter aktif (misal filter kecamatan atau pencarian tanpa memilih sort), default 'awal'
+            // Bila katalog umum tanpa filter, default 'acak' agar hotel muncul teracak
+            $sort = $hasFilter ? 'awal' : 'acak';
+        }
+
+        $page = (int) ($this->request->getGet('page') ?: 1);
+        $seed = (int) $this->request->getGet('seed');
+        if ($seed <= 0) {
+            if ($page > 1 && session('hotel_catalog_seed')) {
+                $seed = (int) session('hotel_catalog_seed');
+            } else {
+                $seed = mt_rand(10000, 99999);
+                session()->set('hotel_catalog_seed', $seed);
+            }
+        } else {
+            session()->set('hotel_catalog_seed', $seed);
+        }
+
         $f = [
             'q'          => trim((string) $this->request->getGet('q')),
             'kecamatan'  => (string) $this->request->getGet('kecamatan'),
             'sarapan'    => (string) $this->request->getGet('sarapan'),
             'rating_min' => (string) $this->request->getGet('rating_min'),
-            'sort'       => (string) ($this->request->getGet('sort') ?: 'awal'),
+            'sort'       => $sort,
+            'seed'       => $seed,
         ];
 
         $hotels = $m->filtered($f)->paginate(12);

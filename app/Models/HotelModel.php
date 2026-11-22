@@ -49,6 +49,16 @@ class HotelModel extends Model
             case 'nama':
                 $this->orderBy('nama', 'ASC');
                 break;
+            case 'acak':
+            case 'random':
+                $seed = (int) ($f['seed'] ?? 0);
+                if ($seed > 0) {
+                    $this->orderBy("md5(CONCAT(id, '{$seed}'))", '', false);
+                } else {
+                    $this->orderBy('RANDOM()', '', false);
+                }
+                break;
+            case 'awal':
             default:
                 $this->orderBy('peringkat', 'ASC');
         }

@@ -37,7 +37,7 @@
             </label>
             <label>Urutkan
                 <select name="sort">
-                    <?php foreach (['awal' => 'Urutan Tripadvisor', 'rating' => 'Rating tertinggi', 'ulasan' => 'Ulasan terbanyak', 'nama' => 'Nama A–Z'] as $v => $l): ?>
+                    <?php foreach (['acak' => 'Acak (Default)', 'rating' => 'Rating tertinggi', 'ulasan' => 'Ulasan terbanyak', 'nama' => 'Nama A–Z', 'awal' => 'Urutan Tripadvisor'] as $v => $l): ?>
                         <option value="<?= $v ?>" <?= $f['sort'] === $v ? 'selected' : '' ?>><?= $l ?></option>
                     <?php endforeach; ?>
                 </select>
