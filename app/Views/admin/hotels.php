@@ -15,7 +15,7 @@
             <td><a class="link" href="<?= site_url('penginapan/' . $h['slug']) ?>" target="_blank"><?= esc($h['nama']) ?></a><br><span class="small"><?= esc($h['alamat']) ?></span></td>
             <td><?= esc($h['kecamatan'] ?? '-') ?></td>
             <td><?= $h['rating'] !== null ? number_format((float) $h['rating'], 1) : '-' ?></td>
-            <td><?= $h['latitude'] !== null ? '✓' : '<span class="muted">–</span>' ?></td>
+            <td><?= ($h['latitude'] ?? null) !== null ? '✓' : '<span class="muted">–</span>' ?></td>
             <td class="nowrap">
                 <a class="link" href="<?= site_url('admin/hotel/' . $h['id'] . '/ubah') ?>">Ubah</a>
                 <form class="inline" method="post" action="<?= site_url('admin/hotel/' . $h['id'] . '/hapus') ?>" onsubmit="return confirm('Hapus hotel ini beserta ulasan & pesannya?')"><?= token_field() ?><button class="linkbtn danger" type="submit">Hapus</button></form>

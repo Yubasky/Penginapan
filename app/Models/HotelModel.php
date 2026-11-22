@@ -19,8 +19,8 @@ class HotelModel extends Model
     /** Terapkan filter dari query string (dipakai web & API). */
     public function filtered(array $f): static
     {
-        // Hanya ambil kolom penting kartu hotel agar tidak menarik Base64 foto fasilitas yang besar
-        $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto');
+        // Hanya ambil kolom penting agar tidak menarik data berat
+        $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude');
 
         $q = trim((string) ($f['q'] ?? ''));
         if ($q !== '') {
