@@ -23,6 +23,8 @@ class Kuliner extends ApiBase
                 'id' => $r['sumber_id'], 'nama' => $r['nama'], 'kategori' => $r['kategori'], 'alamat' => $r['alamat'],
                 'kecamatan' => $r['kecamatan'], 'rating' => $r['rating'] !== null ? (float) $r['rating'] : null,
                 'harga' => $r['harga'], 'foto' => $r['foto'], 'url' => $r['url'],
+                'latitude'  => isset($r['latitude']) && $r['latitude'] !== null ? (float) $r['latitude'] : null,
+                'longitude' => isset($r['longitude']) && $r['longitude'] !== null ? (float) $r['longitude'] : null,
             ], $rows),
         ]);
     }

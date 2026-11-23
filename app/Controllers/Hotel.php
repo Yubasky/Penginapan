@@ -15,6 +15,11 @@ class Hotel extends AppBase
         $m = new HotelModel();
 
         $sortParam = $this->request->getGet('sort');
+        $latParam  = $this->request->getGet('lat');
+        $lngParam  = $this->request->getGet('lng');
+        $userLat   = ($latParam !== null && is_numeric($latParam)) ? (float) $latParam : null;
+        $userLng   = ($lngParam !== null && is_numeric($lngParam)) ? (float) $lngParam : null;
+
         $hasFilter = (
             trim((string) $this->request->getGet('q')) !== '' ||
             ! empty($this->request->getGet('kecamatan')) ||
@@ -24,6 +29,8 @@ class Hotel extends AppBase
 
         if ($sortParam !== null && $sortParam !== '') {
             $sort = (string) $sortParam;
+        } elseif ($userLat !== null && $userLng !== null) {
+            $sort = 'terdekat';
         } else {
             // Bila ada filter aktif (misal filter kecamatan atau pencarian tanpa memilih sort), default 'awal'
             // Bila katalog umum tanpa filter, default 'acak' agar hotel muncul teracak
@@ -50,6 +57,8 @@ class Hotel extends AppBase
             'rating_min' => (string) $this->request->getGet('rating_min'),
             'sort'       => $sort,
             'seed'       => $seed,
+            'lat'        => $userLat,
+            'lng'        => $userLng,
         ];
 
         $hotels = $m->filtered($f)->paginate(12);
@@ -76,15 +85,35 @@ class Hotel extends AppBase
         $rm   = new ReviewModel();
         $user = $this->user();
 
-        // Kuliner: pakai data hasil sinkron; kalau kosong, tanya API kelompok kuliner langsung.
+        // Kuliner: prioritaskan data terdekat berdasarkan koordinat nyata hotel (Haversine);
+        // kalau belum ada, filter per kecamatan; kalau masih kosong, tanya API kelompok kuliner.
         $kuliner = [];
-        if (! empty($hotel['kecamatan'])) {
-            $kuliner = (new KulinerModel())->where('kecamatan', $hotel['kecamatan'])
+        $km = new KulinerModel();
+        if (! empty($hotel['latitude']) && ! empty($hotel['longitude'])) {
+            $kuliner = $km->terdekatDari((float) $hotel['latitude'], (float) $hotel['longitude'], 6, $hotel['kecamatan'] ?? null);
+        } elseif (! empty($hotel['kecamatan'])) {
+            $kuliner = $km->where('kecamatan', $hotel['kecamatan'])
                 ->orderBy('rating DESC NULLS LAST', '', false)->findAll(6);
         }
+
         $klien = new KulinerClient();
-        if (! $kuliner) {
-            $kuliner = $klien->byKecamatan($hotel['kecamatan'], 6);
+        if (empty($kuliner)) {
+            if (! empty($hotel['latitude']) && ! empty($hotel['longitude'])) {
+                $kuliner = $klien->nearby((float) $hotel['latitude'], (float) $hotel['longitude'], 6);
+            }
+            if (empty($kuliner)) {
+                $kuliner = $klien->byKecamatan($hotel['kecamatan'], 6);
+            }
+        }
+
+        // Hitung jarak dari hotel ke tiap kuliner jika masing-masing memiliki koordinat
+        if (! empty($hotel['latitude']) && ! empty($hotel['longitude'])) {
+            foreach ($kuliner as &$k) {
+                if (! empty($k['latitude']) && ! empty($k['longitude'])) {
+                    $k['jarak'] = hitung_jarak((float) $hotel['latitude'], (float) $hotel['longitude'], (float) $k['latitude'], (float) $k['longitude']);
+                }
+            }
+            unset($k);
         }
 
         $inquiries = (new \App\Models\InquiryModel())

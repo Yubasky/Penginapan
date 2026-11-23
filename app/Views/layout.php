@@ -264,6 +264,7 @@ window.addEventListener('click', function(e) {
     <div class="wrap foot__copy">© 2026 Singgah Medan</div>
 </footer>
 <script src="<?= base_url('assets/js/app.js') ?>"></script>
+<script src="<?= base_url('assets/js/gps.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

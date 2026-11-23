@@ -75,6 +75,24 @@ class KulinerClient
         return $out;
     }
 
+    /** Ambil kuliner terdekat dari koordinat lat & lng dari API kelompok kuliner (bila didukung). */
+    public function nearby(float $lat, float $lng, int $limit = 6): array
+    {
+        if (! $this->enabled()) {
+            return [];
+        }
+        $key = 'kuliner_nearby_' . md5(round($lat, 3) . '|' . round($lng, 3) . '|' . $limit);
+        $hit = cache($key);
+        if (is_array($hit)) {
+            return $hit;
+        }
+        $json = $this->get(['lat' => $lat, 'lng' => $lng, 'limit' => $limit]);
+        $out  = $json === null ? [] : array_slice($this->rows($json), 0, $limit);
+        cache()->save($key, $out, $json === null ? 60 : 600);
+
+        return $out;
+    }
+
     /** Untuk sinkronisasi: null = gagal. */
     public function halaman(int $page, int $limit = 100): ?array
     {
@@ -102,6 +120,8 @@ class KulinerClient
         };
         $foto = (string) $pick($r, ['foto', 'gambar', 'image', 'photo_url']);
         $url  = (string) $pick($r, ['url', 'link']);
+        $lat  = $pick($r, ['latitude', 'lat']);
+        $lng  = $pick($r, ['longitude', 'lng', 'lon', 'long']);
 
         return [
             'id'        => (string) $pick($r, ['id', 'slug']),
@@ -113,6 +133,8 @@ class KulinerClient
             'harga'     => (string) $pick($r, ['harga', 'harga_kisaran', 'price_range']),
             'foto'      => preg_match('#^https?://#i', $foto) ? $foto : '',
             'url'       => preg_match('#^https?://#i', $url) ? $url : '',
+            'latitude'  => ($lat !== null && is_numeric($lat)) ? (float) $lat : null,
+            'longitude' => ($lng !== null && is_numeric($lng)) ? (float) $lng : null,
         ];
     }
 }

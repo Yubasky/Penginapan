@@ -19,12 +19,29 @@ $isFav  = in_array((int) $h['id'], favorit_ids(), true);
 
 <div class="wrap detail">
     <div class="detail__main">
-        <section class="panel">
-            <h2>Alamat &amp; lokasi</h2>
+        <section class="panel" id="panel-lokasi" data-hotel-lat="<?= $h['latitude'] ?? '' ?>" data-hotel-lng="<?= $h['longitude'] ?? '' ?>">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem">
+                <h2 style="margin:0">Alamat &amp; Lokasi</h2>
+                <span id="hotel-user-dist" style="display:none;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:3px 10px;border-radius:99px;font-size:.82rem;font-weight:700">
+                    📍 <span id="dist-km-val"></span> dari lokasi Anda
+                </span>
+            </div>
             <p class="addr"><?= esc($h['alamat']) ?>, Medan, Sumatera Utara</p>
+            <?php if (! empty($h['latitude']) && ! empty($h['longitude'])): ?>
+                <p class="small muted" style="margin-top:-.4rem;margin-bottom:.8rem">
+                    Koordinat GPS: <code><?= number_format((float) $h['latitude'], 6) ?>, <?= number_format((float) $h['longitude'], 6) ?></code>
+                </p>
+            <?php endif; ?>
             <iframe class="gmap" title="Peta <?= esc($h['nama'], 'attr') ?>" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="<?= esc(peta_embed_url($h), 'attr') ?>"></iframe>
-            <div class="actions">
+            <div class="actions" style="margin-top:.8rem;display:flex;flex-wrap:wrap;gap:.6rem">
                 <a class="btn" href="<?= esc(peta_url($h), 'attr') ?>" target="_blank" rel="noopener">Buka di Google Maps</a>
+                <button type="button" id="btn-cek-jarak-hotel" class="btn btn--gps btn--sm" onclick="cekJarakKeHotel()">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="7"/></svg>
+                    <span>Cek Jarak &amp; Rute dari Saya</span>
+                </button>
+                <a id="btn-rute-maps" class="btn btn--sm btn--ghost" style="display:none;color:#0284c7;border-color:#bae6fd" href="#" target="_blank" rel="noopener">
+                    🧭 Buka Navigasi Rute Langsung
+                </a>
                 <?php if ($h['link_tripadvisor']): ?>
                     <a class="btn btn--ghost" href="<?= esc($h['link_tripadvisor'], 'attr') ?>" target="_blank" rel="noopener nofollow">Lihat di Tripadvisor</a>
                 <?php endif; ?>
@@ -198,10 +215,18 @@ $isFav  = in_array((int) $h['id'], favorit_ids(), true);
         </section>
 
         <section class="panel">
-            <h2>Kuliner di sekitar <?= esc($h['kecamatan'] ?? 'sini') ?></h2>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.4rem">
+                <h2 style="margin:0">Kuliner Terdekat di Sekitar Hotel</h2>
+                <?php if ($kuliner): ?>
+                    <span class="chip" style="background:#ffedd5;color:#9a3412;font-size:.78rem;font-weight:700"><?= count($kuliner) ?> Tempat Rekomendasi</span>
+                <?php endif; ?>
+            </div>
+            <p class="muted small" style="margin-top:0;margin-bottom:1.1rem">
+                Tempat makan terdekat dari hotel <?= esc($h['nama']) ?><?= ! empty($h['latitude']) ? ' dihitung dari jarak koordinat lokasi GPS' : ' di kawasan ' . esc($h['kecamatan'] ?? '') ?>:
+            </p>
             <?php if ($kuliner): ?>
                 <div class="food"><?php foreach ($kuliner as $k) { echo kuliner_card($k); } ?></div>
-                <p style="margin-top:1rem"><a class="link" href="<?= site_url('kuliner' . (! empty($h['kecamatan']) ? '?kecamatan=' . rawurlencode($h['kecamatan']) : '')) ?>">Lihat semua kuliner di kecamatan ini →</a></p>
+                <p style="margin-top:1.2rem"><a class="link" href="<?= site_url('kuliner' . (! empty($h['kecamatan']) ? '?kecamatan=' . rawurlencode($h['kecamatan']) : '')) ?>">Lihat semua kuliner di kecamatan ini →</a></p>
             <?php else: ?>
                 <p class="muted"><?= $kulinerAktif
                     ? 'Belum ada data kuliner untuk kecamatan ini, atau server kelompok kuliner belum dapat dihubungi.'
@@ -557,5 +582,62 @@ function toggleEditAns(id) {
     form.style.display = isHidden ? 'block' : 'none';
     if (text) text.style.display = isHidden ? 'none' : 'block';
 }
+
+function cekJarakKeHotel() {
+    var panel = document.getElementById('panel-lokasi');
+    if (!panel) return;
+    var hLat = parseFloat(panel.getAttribute('data-hotel-lat'));
+    var hLng = parseFloat(panel.getAttribute('data-hotel-lng'));
+    if (isNaN(hLat) || isNaN(hLng)) {
+        alert('Hotel ini belum memiliki titik koordinat GPS.');
+        return;
+    }
+
+    var btn = document.getElementById('btn-cek-jarak-hotel');
+    var origText = btn.innerHTML;
+    btn.innerHTML = '<span>Mendeteksi GPS...</span>';
+
+    window.SinggahGPS.getLocation(function(pos) {
+        btn.innerHTML = '<span>📍 Lokasi Terdeteksi</span>';
+        var d = window.SinggahGPS.distance(pos.lat, pos.lng, hLat, hLng);
+        var distEl = document.getElementById('hotel-user-dist');
+        var valEl  = document.getElementById('dist-km-val');
+        var ruteBtn = document.getElementById('btn-rute-maps');
+        if (distEl && valEl) {
+            valEl.textContent = window.SinggahGPS.formatDistance(d);
+            distEl.style.display = 'inline-block';
+        }
+        if (ruteBtn) {
+            ruteBtn.href = 'https://www.google.com/maps/dir/?api=1&origin=' + pos.lat + ',' + pos.lng + '&destination=' + hLat + ',' + hLng;
+            ruteBtn.style.display = 'inline-flex';
+        }
+    }, function(err) {
+        btn.innerHTML = origText;
+        alert('Gagal mendeteksi lokasi GPS: ' + err.message);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var cached = window.SinggahGPS.getCachedLocation();
+    var panel  = document.getElementById('panel-lokasi');
+    if (cached && panel) {
+        var hLat = parseFloat(panel.getAttribute('data-hotel-lat'));
+        var hLng = parseFloat(panel.getAttribute('data-hotel-lng'));
+        if (!isNaN(hLat) && !isNaN(hLng)) {
+            var d = window.SinggahGPS.distance(cached.lat, cached.lng, hLat, hLng);
+            var distEl = document.getElementById('hotel-user-dist');
+            var valEl  = document.getElementById('dist-km-val');
+            var ruteBtn = document.getElementById('btn-rute-maps');
+            if (distEl && valEl) {
+                valEl.textContent = window.SinggahGPS.formatDistance(d);
+                distEl.style.display = 'inline-block';
+            }
+            if (ruteBtn) {
+                ruteBtn.href = 'https://www.google.com/maps/dir/?api=1&origin=' + cached.lat + ',' + cached.lng + '&destination=' + hLat + ',' + hLng;
+                ruteBtn.style.display = 'inline-flex';
+            }
+        }
+    }
+});
 </script>
 <?= $this->endSection() ?>

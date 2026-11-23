@@ -10,7 +10,23 @@ class Kuliner extends AppBase
     public function index()
     {
         $m = new KulinerModel();
-        $f = ['q' => trim((string) $this->request->getGet('q')), 'kecamatan' => (string) $this->request->getGet('kecamatan')];
+        $latParam = $this->request->getGet('lat');
+        $lngParam = $this->request->getGet('lng');
+        $userLat  = ($latParam !== null && is_numeric($latParam)) ? (float) $latParam : null;
+        $userLng  = ($lngParam !== null && is_numeric($lngParam)) ? (float) $lngParam : null;
+
+        $sort = (string) ($this->request->getGet('sort') ?? '');
+        if ($sort === '' && $userLat !== null && $userLng !== null) {
+            $sort = 'terdekat';
+        }
+
+        $f = [
+            'q'         => trim((string) $this->request->getGet('q')),
+            'kecamatan' => (string) $this->request->getGet('kecamatan'),
+            'lat'       => $userLat,
+            'lng'       => $userLng,
+            'sort'      => $sort,
+        ];
 
         return view('kuliner/index', [
             'title'     => 'Kuliner di Medan — Singgah Medan',

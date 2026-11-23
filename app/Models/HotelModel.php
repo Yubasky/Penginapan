@@ -19,8 +19,16 @@ class HotelModel extends Model
     /** Terapkan filter dari query string (dipakai web & API). */
     public function filtered(array $f): static
     {
-        // Hanya ambil kolom penting agar tidak menarik data berat
-        $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude');
+        $userLat = isset($f['lat']) && is_numeric($f['lat']) ? (float) $f['lat'] : null;
+        $userLng = isset($f['lng']) && is_numeric($f['lng']) ? (float) $f['lng'] : null;
+
+        if ($userLat !== null && $userLng !== null) {
+            $haversine = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians({$userLat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$userLng})) + sin(radians({$userLat})) * sin(radians(latitude))))))";
+            $this->select("id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude, CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN {$haversine} ELSE NULL END AS jarak", false);
+        } else {
+            // Hanya ambil kolom penting agar tidak menarik data berat
+            $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude');
+        }
 
         $q = trim((string) ($f['q'] ?? ''));
         if ($q !== '') {
@@ -40,6 +48,13 @@ class HotelModel extends Model
         }
 
         switch ($f['sort'] ?? 'awal') {
+            case 'terdekat':
+                if ($userLat !== null && $userLng !== null) {
+                    $this->orderBy('jarak ASC NULLS LAST, rating DESC NULLS LAST', '', false);
+                } else {
+                    $this->orderBy('rating DESC NULLS LAST', '', false);
+                }
+                break;
             case 'rating':
                 $this->orderBy('rating DESC NULLS LAST, jumlah_ulasan DESC NULLS LAST', '', false);
                 break;

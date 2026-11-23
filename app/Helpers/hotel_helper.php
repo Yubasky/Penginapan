@@ -28,6 +28,36 @@ if (! function_exists('rating_label')) {
     }
 }
 
+if (! function_exists('hitung_jarak')) {
+    /** Hitung jarak antara 2 koordinat bumi (dalam kilometer) menggunakan rumus Haversine. */
+    function hitung_jarak(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $r = 6371; // radius bumi dalam km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLng / 2) * sin($dLng / 2);
+        $c = 2 * atan2(sqrt(max(0.0, min(1.0, $a))), sqrt(max(0.0, min(1.0, 1 - $a))));
+        return round($r * $c, 2);
+    }
+}
+
+if (! function_exists('format_jarak')) {
+    /** Format jarak ramah pengguna: "450 m" atau "2.4 km". */
+    function format_jarak($km): string
+    {
+        if ($km === null || $km === '') {
+            return '';
+        }
+        $d = (float) $km;
+        if ($d < 1.0) {
+            return round($d * 1000) . ' m';
+        }
+        return number_format($d, 1, ',', '.') . ' km';
+    }
+}
+
 if (! function_exists('peta_url')) {
     function peta_url(array $h): string
     {
@@ -252,8 +282,9 @@ if (! function_exists('hotel_card')) {
     function hotel_card(array $h): string
     {
         $fav = in_array((int) $h['id'], favorit_ids(), true);
+        $jarak = isset($h['jarak']) && $h['jarak'] !== null && $h['jarak'] !== '' ? (float) $h['jarak'] : null;
         ob_start(); ?>
-        <article class="card">
+        <article class="card" data-hotel-id="<?= (int) $h['id'] ?>" data-lat="<?= $h['latitude'] ?? '' ?>" data-lng="<?= $h['longitude'] ?? '' ?>">
             <a class="card__cover <?= ! empty($h['foto']) ? 'card__cover--has-img' : '' ?>" href="<?= site_url('penginapan/' . $h['slug']) ?>" style="--h: <?= hue_hotel($h) ?>" aria-label="<?= esc($h['nama'], 'attr') ?>">
                 <?php if (! empty($h['foto'])): ?>
                     <img src="<?= foto_url($h['foto']) ?>" alt="<?= esc($h['nama']) ?>" class="card__photo" loading="lazy">
@@ -263,13 +294,23 @@ if (! function_exists('hotel_card')) {
                 <?php if ($h['sarapan'] !== 'Tidak'): ?>
                     <span class="chip chip--gold"><?= $h['sarapan'] === 'All-in' ? 'All-in' : 'Sarapan' ?></span>
                 <?php endif; ?>
+                <?php if ($jarak !== null): ?>
+                    <span class="chip chip--gps" title="Jarak dari lokasi Anda">📍 <?= format_jarak($jarak) ?></span>
+                <?php else: ?>
+                    <span class="chip chip--gps" style="display:none" title="Jarak dari lokasi Anda"></span>
+                <?php endif; ?>
             </a>
             <form class="fav" method="post" action="<?= site_url('favorit/' . $h['id']) ?>">
                 <?= token_field() ?>
                 <button class="fav__btn <?= $fav ? 'is-on' : '' ?>" type="submit" title="<?= $fav ? 'Hapus dari favorit' : 'Simpan ke favorit' ?>" aria-label="Favorit"><?= $fav ? '♥' : '♡' ?></button>
             </form>
             <div class="card__body">
-                <?php if (! empty($h['kecamatan'])): ?><p class="eyebrow"><?= esc($h['kecamatan']) ?></p><?php endif; ?>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+                    <?php if (! empty($h['kecamatan'])): ?><p class="eyebrow" style="margin:0"><?= esc($h['kecamatan']) ?></p><?php endif; ?>
+                    <span class="card__jarak-label" style="<?= $jarak !== null ? '' : 'display:none;' ?>font-size:.76rem;font-weight:700;color:#0284c7;background:#f0f9ff;border:1px solid #bae6fd;padding:1px 7px;border-radius:99px">
+                        📍 <span class="val"><?= $jarak !== null ? format_jarak($jarak) : '' ?></span>
+                    </span>
+                </div>
                 <h3><a href="<?= site_url('penginapan/' . $h['slug']) ?>"><?= esc($h['nama']) ?></a></h3>
                 <p class="card__addr"><?= esc($h['alamat']) ?></p>
                 <div class="card__meta">
@@ -326,14 +367,20 @@ if (! function_exists('paginasi')) {
 if (! function_exists('kuliner_card')) {
     function kuliner_card(array $k): string
     {
+        $jarak = isset($k['jarak']) && $k['jarak'] !== null && $k['jarak'] !== '' ? (float) $k['jarak'] : null;
         ob_start(); ?>
-        <article class="food__item">
+        <article class="food__item" data-lat="<?= $k['latitude'] ?? '' ?>" data-lng="<?= $k['longitude'] ?? '' ?>">
             <?php if (! empty($k['foto'])): ?><img src="<?= esc($k['foto'], 'attr') ?>" alt="" loading="lazy"><?php endif; ?>
             <div>
                 <h3><?php if (! empty($k['url'])): ?><a href="<?= esc($k['url'], 'attr') ?>" target="_blank" rel="noopener"><?= esc($k['nama']) ?></a><?php else: ?><?= esc($k['nama']) ?><?php endif; ?></h3>
                 <p class="muted"><?= esc(trim(($k['kategori'] ?? '') . (! empty($k['harga']) ? ' · ' . $k['harga'] : ''), ' ·')) ?></p>
                 <?php if (! empty($k['alamat'])): ?><p class="small"><?= esc($k['alamat']) ?></p><?php endif; ?>
-                <?php if (isset($k['rating']) && $k['rating'] !== null && $k['rating'] !== ''): ?><p><?= rating_label($k['rating']) ?></p><?php endif; ?>
+                <div style="display:flex;align-items:center;gap:.6rem;margin-top:.4rem;flex-wrap:wrap">
+                    <?php if (isset($k['rating']) && $k['rating'] !== null && $k['rating'] !== ''): ?><p style="margin:0"><?= rating_label($k['rating']) ?></p><?php endif; ?>
+                    <span class="chip-jarak" style="<?= $jarak !== null ? 'display:inline-flex;' : 'display:none;' ?>align-items:center;gap:3px;font-size:.78rem;font-weight:700;color:#0284c7;background:#e0f2fe;padding:2px 8px;border-radius:99px" title="Jarak terdekat">
+                        📍 <span class="val"><?= $jarak !== null ? format_jarak($jarak) : '' ?></span>
+                    </span>
+                </div>
             </div>
         </article>
         <?php

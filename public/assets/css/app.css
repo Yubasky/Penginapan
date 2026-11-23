@@ -373,3 +373,37 @@ body.adm{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
 .nav__notif-snippet{color:#64748b!important;font-style:italic;margin-top:.25rem!important;font-size:.8rem}
 .nav__notif-empty{padding:2rem 1rem;text-align:center;color:#64748b;font-size:.85rem}
 
+/* ===== Fitur GPS & Jarak Terdekat ===== */
+.chip--gps{background:#0284c7!important;color:#fff!important;box-shadow:0 2px 6px rgba(2,132,199,.35);font-size:.74rem!important;padding:.2rem .6rem!important}
+.card .chip--gps{position:absolute;bottom:10px;left:10px;top:auto!important}
+.btn--gps{display:inline-flex;align-items:center;gap:.45rem;background:#0284c7;color:#fff;border:none;font-weight:600;transition:all .2s;cursor:pointer}
+.btn--gps:hover{background:#0369a1;color:#fff}
+.btn--gps.is-active{background:#0f766e}
+.btn--gps svg{flex-shrink:0}
+.gps-banner{background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:.85rem 1.2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;font-size:.9rem;color:#0369a1}
+.gps-banner a{color:#0284c7;font-weight:700;text-decoration:underline}
+
+/* Pulsing User Marker di Leaflet Map */
+.user-marker-icon{position:relative}
+.user-marker-pulse{position:absolute;width:24px;height:24px;border-radius:50%;background:#0284c7;opacity:.7;animation:userPulse 1.8s infinite ease-out;top:-12px;left:-12px}
+.user-marker-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#0284c7;border:2.5px solid #ffffff;box-shadow:0 0 5px rgba(0,0,0,.4);top:-7px;left:-7px}
+@keyframes userPulse{0%{transform:scale(.5);opacity:1}100%{transform:scale(2.4);opacity:0}}
+
+/* Filter Toggle di Map */
+.map-tabs{display:inline-flex;background:#f1f5f9;border-radius:10px;padding:3px;gap:2px}
+.map-tab{padding:.4rem .85rem;border-radius:8px;font-size:.84rem;font-weight:600;color:#64748b;text-decoration:none;transition:all .15s}
+.map-tab:hover{color:#0f172a}
+.map-tab.is-active{background:#ffffff;color:#0f766e;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* Panel Tempat Terdekat di Peta */
+.nearby-drawer{margin-top:1.5rem;background:#ffffff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:1.4rem}
+.nearby-drawer__head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;margin-bottom:1rem;padding-bottom:.8rem;border-bottom:1px solid #f1f5f9}
+.nearby-drawer__head h3{margin:0;font-size:1.15rem;display:flex;align-items:center;gap:.5rem}
+.nearby-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.nearby-card{border:1px solid #e2e8f0;border-radius:12px;padding:.85rem;background:#f8fafc;transition:all .2s;cursor:pointer;position:relative}
+.nearby-card:hover{border-color:var(--teal);background:#ffffff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.06)}
+.nearby-card h4{margin:0 0 .3rem;font-size:.95rem;color:#0f172a}
+.nearby-card p{margin:0;font-size:.8rem;color:#64748b}
+.nearby-card .dist{position:absolute;top:.75rem;right:.75rem;font-weight:700;font-size:.78rem;color:#0284c7;background:#e0f2fe;padding:2px 8px;border-radius:99px}
+
+
