@@ -23,6 +23,7 @@ $routes->get('bandingkan/(:any)', static function () {
 // ---- Akun ----
 $routes->match(['get', 'post'], 'masuk', 'Auth::masuk');
 $routes->match(['get', 'post'], 'daftar', 'Auth::daftar');
+$routes->match(['get', 'post'], 'lupa-sandi', 'Auth::lupa');
 $routes->get('keluar', 'Auth::keluar');
 $routes->get('akun', 'Akun::index');
 $routes->post('akun/update', 'Akun::update');

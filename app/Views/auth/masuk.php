@@ -16,6 +16,7 @@
                 </span>
             </div>
         </label>
+        <p class="small" style="margin:-.3rem 0 0;text-align:right"><a class="link" href="<?= site_url('lupa-sandi') ?>">Lupa sandi?</a></p>
         <button class="btn btn--block" type="submit">Masuk</button>
     </form>
     <p class="muted">Belum punya akun? <a class="link" href="<?= site_url('daftar') ?>">Daftar</a></p>
