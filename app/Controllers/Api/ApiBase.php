@@ -13,7 +13,7 @@ abstract class ApiBase extends BaseController
         return $this->response
             ->setStatusCode($status)
             ->setHeader('Access-Control-Allow-Origin', '*')
-            ->setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            ->setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
             ->setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-API-KEY, Authorization')
             ->setJSON($payload);
     }

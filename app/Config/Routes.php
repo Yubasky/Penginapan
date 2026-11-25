@@ -81,6 +81,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (R
     $routes->get('hotels', 'Hotels::index');
     $routes->get('hotels/(:num)', 'Hotels::show/$1');
     $routes->get('kecamatan', 'Hotels::kecamatan');
+    $routes->get('reviews', 'Reviews::index');
+    $routes->post('reviews', 'Reviews::create');
+    $routes->delete('reviews/(:num)', 'Reviews::delete/$1');
     $routes->get('kuliner', 'Kuliner::index');
     $routes->post('kuliner/push', 'Kuliner::push');
     $routes->get('export/hotels', 'Export::hotels');

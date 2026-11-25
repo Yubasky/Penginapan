@@ -20,14 +20,15 @@ class Hotels extends ApiBase
             'longitude'       => isset($h['longitude']) && $h['longitude'] !== null ? (float) $h['longitude'] : null,
             'rating'          => $h['rating'] !== null ? (float) $h['rating'] : null,
             'jumlah_ulasan'   => $h['jumlah_ulasan'] !== null ? (int) $h['jumlah_ulasan'] : null,
-            'sarapan'         => $h['sarapan'],
-            'url'             => site_url('penginapan/' . $h['slug']),
-            'tripadvisor_url' => $h['link_tripadvisor'],
-            'ulasan_unggulan' => $h['reviewer'] ? [
+            'sarapan'         => $h['sarapan'] ?? null,
+            'foto'            => $h['foto'] ?? null,
+            'url'             => site_url('penginapan/' . ($h['slug'] ?? $h['id'])),
+            'tripadvisor_url' => $h['link_tripadvisor'] ?? null,
+            'ulasan_unggulan' => ! empty($h['reviewer']) ? [
                 'reviewer' => $h['reviewer'],
-                'rating'   => $h['rating_ulasan'] !== null ? (int) $h['rating_ulasan'] : null,
-                'tanggal'  => $h['tanggal_ulasan'],
-                'judul'    => $h['judul_ulasan'],
+                'rating'   => isset($h['rating_ulasan']) && $h['rating_ulasan'] !== null ? (int) $h['rating_ulasan'] : null,
+                'tanggal'  => $h['tanggal_ulasan'] ?? null,
+                'judul'    => $h['judul_ulasan'] ?? null,
             ] : null,
         ];
     }
