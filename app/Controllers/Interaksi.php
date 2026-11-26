@@ -71,16 +71,34 @@ class Interaksi extends AppBase
             'isi'      => trim((string) $this->request->getPost('isi')),
         ];
 
-        if ($lama) {
-            $m->update($lama['id'], $data);
-            $msg = 'Ulasanmu berhasil diperbarui.';
-        } else {
-            $m->insert($data);
-            $msg = 'Terima kasih, ulasanmu berhasil tersimpan.';
-        }
+        $db = db_connect();
+        $db->transBegin();
 
-        // Sinkronkan rating dan jumlah ulasan hotel secara dinamis
-        (new HotelModel())->sinkronRating($id);
+        try {
+            if ($lama) {
+                $m->update($lama['id'], $data);
+                $msg = 'Ulasanmu berhasil diperbarui.';
+            } else {
+                $m->insert($data);
+                $msg = 'Terima kasih, ulasanmu berhasil tersimpan.';
+            }
+
+            // Sinkronkan rating dan jumlah ulasan hotel secara dinamis
+            (new HotelModel())->sinkronRating($id);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->back()->withInput()->with('error', 'Gagal menyimpan ulasan. Silakan coba lagi.');
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Interaksi::ulasan gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan ulasan.');
+        }
 
         return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', $msg);
     }
@@ -96,9 +114,27 @@ class Interaksi extends AppBase
         $lama  = $m->where('hotel_id', $id)->where('user_id', $uid)->first();
 
         if ($lama) {
-            $m->delete($lama['id']);
-            // Sinkronkan rating dan jumlah ulasan hotel setelah dihapus
-            (new HotelModel())->sinkronRating($id);
+            $db = db_connect();
+            $db->transBegin();
+
+            try {
+                $m->delete($lama['id']);
+                // Sinkronkan rating dan jumlah ulasan hotel setelah dihapus
+                (new HotelModel())->sinkronRating($id);
+
+                if ($db->transStatus() === false) {
+                    $db->transRollback();
+
+                    return redirect()->back()->with('error', 'Gagal menghapus ulasan.');
+                }
+
+                $db->transCommit();
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                log_message('error', 'Interaksi::hapusUlasan gagal: {msg}', ['msg' => $e->getMessage()]);
+
+                return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus ulasan.');
+            }
         }
 
         return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', 'Ulasanmu berhasil dihapus.');

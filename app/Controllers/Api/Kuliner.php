@@ -49,16 +49,34 @@ class Kuliner extends ApiBase
 
         $klien = new \App\Libraries\KulinerClient();
         $m     = new KulinerModel();
+        $db    = db_connect();
         $ok    = 0;
         $gagal = [];
-        foreach ($rows as $i => $r) {
-            $n = is_array($r) ? $klien->normalize($r) : ['nama' => ''];
-            if ($n['nama'] === '') {
-                $gagal[] = ['index' => $i, 'alasan' => 'nama kosong'];
-                continue;
+
+        $db->transBegin();
+        try {
+            foreach ($rows as $i => $r) {
+                $n = is_array($r) ? $klien->normalize($r) : ['nama' => ''];
+                if ($n['nama'] === '') {
+                    $gagal[] = ['index' => $i, 'alasan' => 'nama kosong'];
+                    continue;
+                }
+                $m->upsert($n);
+                $ok++;
             }
-            $m->upsert($n);
-            $ok++;
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->json(['status' => 'error', 'message' => 'Gagal menyimpan batch data kuliner.'], 500);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'API Kuliner::push gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan pada server saat memproses data kuliner.'], 500);
         }
 
         return $this->json(['status' => 'ok', 'diterima' => $ok, 'ditolak' => $gagal]);

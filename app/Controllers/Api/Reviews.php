@@ -76,8 +76,9 @@ class Reviews extends ApiBase
             $userId = 2;
         }
 
+        $db          = db_connect();
         $reviewModel = new ReviewModel();
-        $insertData = [
+        $insertData  = [
             'hotel_id' => $hotelId,
             'user_id'  => $userId,
             'rating'   => $rating,
@@ -85,13 +86,31 @@ class Reviews extends ApiBase
             'isi'      => $isi,
         ];
 
-        $reviewId = $reviewModel->insert($insertData);
-        if (! $reviewId) {
-            return $this->json(['status' => 'error', 'message' => 'Gagal menyimpan ulasan.'], 500);
-        }
+        $db->transBegin();
+        try {
+            $reviewId = $reviewModel->insert($insertData);
+            if (! $reviewId || $db->transStatus() === false) {
+                $db->transRollback();
 
-        // Sinkronkan rating dan jumlah ulasan hotel secara dinamis
-        (new HotelModel())->sinkronRating($hotelId);
+                return $this->json(['status' => 'error', 'message' => 'Gagal menyimpan ulasan.'], 500);
+            }
+
+            // Sinkronkan rating dan jumlah ulasan hotel secara dinamis dalam transaksi yang sama
+            (new HotelModel())->sinkronRating($hotelId);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->json(['status' => 'error', 'message' => 'Gagal menyinkronkan rating hotel.'], 500);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'API Reviews::create gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan pada server saat menyimpan ulasan.'], 500);
+        }
 
         $saved = $reviewModel->find($reviewId);
 
@@ -124,10 +143,26 @@ class Reviews extends ApiBase
         }
 
         $hotelId = (int) $review['hotel_id'];
-        $m->delete($id);
+        $db      = db_connect();
+        $db->transBegin();
 
-        // Hitung ulang rating hotel
-        (new HotelModel())->sinkronRating($hotelId);
+        try {
+            $m->delete($id);
+            (new HotelModel())->sinkronRating($hotelId);
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return $this->json(['status' => 'error', 'message' => 'Gagal menghapus ulasan.'], 500);
+            }
+
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'API Reviews::delete gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan pada server saat menghapus ulasan.'], 500);
+        }
 
         return $this->json([
             'status'  => 'ok',
