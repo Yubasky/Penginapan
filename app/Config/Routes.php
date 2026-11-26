@@ -75,17 +75,36 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static functio
     $routes->get('laporan/pesan', 'Laporan::pesan');
 });
 
-// ---- API tukar data (JSON) ----
-$routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (RouteCollection $routes) {
+// ---- API tukar data & client (JSON) — mendukung /api/* dan /api/v1/* ----
+$apiRoutes = static function (RouteCollection $routes): void {
     $routes->options('(:any)', 'Hotels::options');
+
+    // Autentikasi terpadu (JWT)
+    $routes->post('auth/login', 'Auth::login');
+    $routes->get('auth/me', 'Auth::me');
+
+    // Penginapan (CRUD & Kecamatan)
     $routes->get('hotels', 'Hotels::index');
     $routes->get('hotels/(:num)', 'Hotels::show/$1');
+    $routes->post('hotels', 'Hotels::create');
+    $routes->put('hotels/(:num)', 'Hotels::update/$1');
+    $routes->patch('hotels/(:num)', 'Hotels::update/$1');
+    $routes->delete('hotels/(:num)', 'Hotels::delete/$1');
     $routes->get('kecamatan', 'Hotels::kecamatan');
+
+    // Ulasan (CRUD + locking)
     $routes->get('reviews', 'Reviews::index');
     $routes->post('reviews', 'Reviews::create');
+    $routes->put('reviews/(:num)', 'Reviews::update/$1');
+    $routes->patch('reviews/(:num)', 'Reviews::update/$1');
     $routes->delete('reviews/(:num)', 'Reviews::delete/$1');
+
+    // Integrasi Kuliner & Ekspor
     $routes->get('kuliner', 'Kuliner::index');
     $routes->post('kuliner/push', 'Kuliner::push');
     $routes->get('export/hotels', 'Export::hotels');
     $routes->get('export/ulasan', 'Export::ulasan');
-});
+};
+
+$routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], $apiRoutes);
+$routes->group('api', ['namespace' => 'App\Controllers\Api'], $apiRoutes);

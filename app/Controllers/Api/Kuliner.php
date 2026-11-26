@@ -7,9 +7,12 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class Kuliner extends ApiBase
 {
-    /** GET /api/kuliner — salinan data kuliner yang tersimpan di server kami (publik). */
+    /** GET /api/kuliner — salinan data kuliner yang tersimpan di server kami. */
     public function index(): ResponseInterface
     {
+        if ($r = $this->butuhKey()) {
+            return $r;
+        }
         $m = new KulinerModel();
         [$page, $limit] = $this->paging();
         $m->filtered(['q' => (string) $this->request->getGet('q'), 'kecamatan' => (string) $this->request->getGet('kecamatan')]);
@@ -35,7 +38,7 @@ class Kuliner extends ApiBase
      */
     public function push(): ResponseInterface
     {
-        if ($r = $this->butuhKey()) {
+        if ($r = $this->butuhRole(['admin', 'partner'])) {
             return $r;
         }
         $json = json_decode((string) $this->request->getBody(), true);

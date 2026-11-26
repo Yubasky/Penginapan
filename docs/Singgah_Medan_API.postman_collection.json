@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "Singgah Medan REST API v1",
+    "_postman_id": "a7f1b4c2-8d3e-4b2a-9f1c-202611270001",
+    "description": "Dokumentasi & Koleksi Uji REST API v1 Singgah Medan (CodeIgniter 4 + PostgreSQL Supabase) untuk Evaluasi Proyek Akhir PLMKB502.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "apiKey", "value": "sm_295874db28de98e2fe7fe062c3af9c264bed1b80" },
+    { "key": "hotelId", "value": "7" },
+    { "key": "reviewId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01. Auth (JWT Terpadu)",
+      "item": [
+        {
+          "name": "Login User / Admin (Dapatkan JWT Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.token) {",
+                  "  pm.collectionVariables.set('token', res.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@singgahmedan.id\",\n  \"password\": \"ISI_PASSWORD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Cek Profil Token Aktif (GET /auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Hotels (CRUD & Kecamatan)",
+      "item": [
+        {
+          "name": "List Hotels (Pagination & Filter)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotels?kecamatan=Medan Petisah&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels"],
+              "query": [
+                { "key": "kecamatan", "value": "Medan Petisah" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detail Hotel by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotels/{{hotelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "{{hotelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Hotel (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Hotel Uji Postman Medan\",\n  \"kecamatan\": \"Medan Barat\",\n  \"alamat\": \"Jl. Merdeka No. 10, Medan\",\n  \"sarapan\": \"Ya\",\n  \"latitude\": 3.5912,\n  \"longitude\": 98.6771\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotels",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels"]
+            }
+          }
+        },
+        {
+          "name": "Update Hotel (Admin Only + Optimistic Lock)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nama\": \"Hotel Uji Postman Medan (Updated)\",\n  \"sarapan\": \"All-in\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotels/{{hotelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "{{hotelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Hotel (Admin Only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotels/{{hotelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels", "{{hotelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Daftar Kecamatan & Jumlah Hotel",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kecamatan",
+              "host": ["{{baseUrl}}"],
+              "path": ["kecamatan"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Reviews (CRUD Ulasan + Concurrency Lock)",
+      "item": [
+        {
+          "name": "List Reviews per Hotel",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews?hotel_id={{hotelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"],
+              "query": [
+                { "key": "hotel_id", "value": "{{hotelId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "  pm.collectionVariables.set('reviewId', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hotel_id\": 7,\n  \"rating\": 5,\n  \"judul\": \"Nyaman dan dekat kuliner\",\n  \"isi\": \"Lokasi sangat strategis di pusat kota Medan.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4,\n  \"judul\": \"Direvisi setelah checkout\",\n  \"isi\": \"Pelayanan baik dan sarapan enak.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{reviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "{{reviewId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{reviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews", "{{reviewId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Kuliner & Export (Mitra X-API-KEY)",
+      "item": [
+        {
+          "name": "List Kuliner Tersinkron",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-API-KEY", "value": "{{apiKey}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/kuliner?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["kuliner"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Hotels JSON",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-API-KEY", "value": "{{apiKey}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/export/hotels?format=json",
+              "host": ["{{baseUrl}}"],
+              "path": ["export", "hotels"],
+              "query": [
+                { "key": "format", "value": "json" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Uji Keamanan & Error (Checklist E)",
+      "item": [
+        {
+          "name": "Uji 401 - Request Tanpa Token",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/hotels",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels"]
+            }
+          }
+        },
+        {
+          "name": "Uji 403 - User Biasa Coba Create Hotel",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nama\":\"Tes 403\",\"kecamatan\":\"Medan Baru\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/hotels",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels"]
+            }
+          }
+        },
+        {
+          "name": "Uji 422 - Input Tidak Valid (Rating 99)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"hotel_id\":7,\"rating\":99,\"isi\":\"x\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["reviews"]
+            }
+          }
+        },
+        {
+          "name": "Uji SQL Injection Sederhana (Aman)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-API-KEY", "value": "{{apiKey}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotels?q=' OR '1'='1' --",
+              "host": ["{{baseUrl}}"],
+              "path": ["hotels"],
+              "query": [
+                { "key": "q", "value": "' OR '1'='1' --" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

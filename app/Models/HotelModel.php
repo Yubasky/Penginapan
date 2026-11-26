@@ -24,10 +24,10 @@ class HotelModel extends Model
 
         if ($userLat !== null && $userLng !== null) {
             $haversine = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians({$userLat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$userLng})) + sin(radians({$userLat})) * sin(radians(latitude))))))";
-            $this->select("id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude, CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN {$haversine} ELSE NULL END AS jarak", false);
+            $this->select("id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude, updated_at, CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN {$haversine} ELSE NULL END AS jarak", false);
         } else {
             // Hanya ambil kolom penting agar tidak menarik data berat
-            $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude');
+            $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude, updated_at');
         }
 
         $q = trim((string) ($f['q'] ?? ''));

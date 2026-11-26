@@ -3,33 +3,119 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\JwtHelper;
 use App\Models\ApiKeyModel;
+use App\Models\UserModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
 abstract class ApiBase extends BaseController
 {
+    /** Info aktor terautentikasi: ['type' => 'user'|'partner', 'id' => int|null, 'nama' => string, 'email' => ?string, 'role' => string] */
+    protected ?array $authActor = null;
+
     protected function json(array $payload, int $status = 200): ResponseInterface
     {
         return $this->response
             ->setStatusCode($status)
             ->setHeader('Access-Control-Allow-Origin', '*')
-            ->setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
-            ->setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-API-KEY, Authorization')
+            ->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+            ->setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-API-KEY, Authorization, ngrok-skip-browser-warning')
             ->setJSON($payload);
     }
 
-    /** Mengembalikan response 401 bila kunci API salah/tidak ada; null bila boleh lanjut. */
+    /** Batas laju permintaan per IP (default 120 req/menit). */
+    protected function cekRateLimit(int $maxPerMinute = 120): ?ResponseInterface
+    {
+        try {
+            $throttler = \Config\Services::throttler();
+            $ip        = (string) ($this->request->getIPAddress() ?: '127.0.0.1');
+            if ($throttler->check('api_' . md5($ip), $maxPerMinute, MINUTE) === false) {
+                return $this->json([
+                    'status'  => 'error',
+                    'message' => 'Terlalu banyak permintaan. Coba lagi dalam beberapa saat.',
+                ], 429);
+            }
+        } catch (\Throwable $e) {
+            // Jangan gagalkan request bila cache throttler tidak tersedia
+            log_message('debug', 'Rate limit dilewati: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /** Mengembalikan response 401/429 bila autentikasi gagal atau rate limit tercapai; null bila boleh lanjut. */
     protected function butuhKey(): ?ResponseInterface
     {
-        $key = trim((string) $this->request->getHeaderLine('X-API-KEY'));
-        if ($key === '') {
+        if ($r = $this->cekRateLimit()) {
+            return $r;
+        }
+
+        $token = trim((string) $this->request->getHeaderLine('X-API-KEY'));
+        if ($token === '') {
             $auth = (string) $this->request->getHeaderLine('Authorization');
             if (stripos($auth, 'Bearer ') === 0) {
-                $key = trim(substr($auth, 7));
+                $token = trim(substr($auth, 7));
             }
         }
-        if (! (new ApiKeyModel())->cek($key)) {
-            return $this->json(['status' => 'error', 'message' => 'Kunci API tidak valid. Kirim header X-API-KEY.'], 401);
+
+        if ($token === '') {
+            return $this->json([
+                'status'  => 'error',
+                'message' => 'Autentikasi diperlukan. Kirim header X-API-KEY atau Authorization: Bearer <token>.',
+            ], 401);
+        }
+
+        // 1. Cek API Key mitra (prefiks sm_)
+        if (str_starts_with($token, 'sm_')) {
+            $keyRow = (new ApiKeyModel())->cek($token);
+            if (! $keyRow) {
+                return $this->json(['status' => 'error', 'message' => 'Kunci API tidak valid atau nonaktif.'], 401);
+            }
+            $this->authActor = [
+                'type'  => 'partner',
+                'id'    => null,
+                'nama'  => (string) $keyRow['nama'],
+                'email' => null,
+                'role'  => 'partner',
+            ];
+
+            return null;
+        }
+
+        // 2. Cek Bearer JWT Token hasil /api/v1/auth/login
+        $payload = JwtHelper::decode($token);
+        if (! $payload || empty($payload['sub'])) {
+            return $this->json(['status' => 'error', 'message' => 'Token tidak valid atau sudah kedaluwarsa.'], 401);
+        }
+
+        $u = (new UserModel())->select('id, nama, email, role')->find((int) $payload['sub']);
+        if (! $u) {
+            return $this->json(['status' => 'error', 'message' => 'Akun pengguna tidak ditemukan.'], 401);
+        }
+
+        $this->authActor = [
+            'type'  => 'user',
+            'id'    => (int) $u['id'],
+            'nama'  => (string) $u['nama'],
+            'email' => (string) $u['email'],
+            'role'  => (string) $u['role'],
+        ];
+
+        return null;
+    }
+
+    /** Memastikan aktor terautentikasi memiliki salah satu role yang diizinkan (403 bila tidak). */
+    protected function butuhRole(array $allowedRoles): ?ResponseInterface
+    {
+        if ($r = $this->butuhKey()) {
+            return $r;
+        }
+        $role = $this->authActor['role'] ?? '';
+        if (! in_array($role, $allowedRoles, true)) {
+            return $this->json([
+                'status'  => 'error',
+                'message' => "Akses ditolak (403): peran '{$role}' tidak memiliki izin untuk aksi ini.",
+            ], 403);
         }
 
         return null;

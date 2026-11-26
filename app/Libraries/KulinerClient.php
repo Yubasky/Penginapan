@@ -53,8 +53,8 @@ class KulinerClient
             }
 
             $client = \Config\Services::curlrequest([
-                'timeout'         => 10,
-                'connect_timeout' => 5,
+                'timeout'         => 30,
+                'connect_timeout' => 10,
                 'http_errors'     => false,
             ]);
             $res = $client->get($origin . '/api/v1/' . ltrim($path, '/'), [

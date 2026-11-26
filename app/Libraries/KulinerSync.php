@@ -19,7 +19,7 @@ class KulinerSync
         $firstP = null;
 
         for ($p = 1; $p <= 100; $p++) {
-            $res = $client->halaman($p, 50);
+            $res = $client->halaman($p, 20);
             if ($res === null) {
                 $detail = $client->lastError();
 

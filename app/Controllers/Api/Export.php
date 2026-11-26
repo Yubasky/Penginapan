@@ -8,10 +8,10 @@ use CodeIgniter\HTTP\ResponseInterface;
 /** Ekspor data lengkap — khusus pemegang kunci API. */
 class Export extends ApiBase
 {
-    /** GET /api/export/hotels?format=json|csv */
+    /** GET /api/v1/export/hotels?format=json|csv */
     public function hotels(): ResponseInterface
     {
-        if ($r = $this->butuhKey()) {
+        if ($r = $this->butuhRole(['admin', 'partner'])) {
             return $r;
         }
         $rows = (new HotelModel())->orderBy('peringkat')->findAll();
@@ -34,10 +34,10 @@ class Export extends ApiBase
         return $this->json(['status' => 'ok', 'total' => count($rows), 'data' => array_map([Hotels::class, 'format'], $rows)]);
     }
 
-    /** GET /api/export/ulasan — ulasan pengunjung situs kami. */
+    /** GET /api/v1/export/ulasan — ulasan pengunjung situs kami. */
     public function ulasan(): ResponseInterface
     {
-        if ($r = $this->butuhKey()) {
+        if ($r = $this->butuhRole(['admin', 'partner'])) {
             return $r;
         }
         $rows = db_connect()->table('reviews')
