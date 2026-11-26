@@ -1,9 +1,6 @@
 -- ============================================================================
 -- SINGGAH MEDAN — OBJEK DATABASE SERVER (K2: View, Function/SP, Trigger)
 -- ============================================================================
--- Memenuhi syarat minimal >= 3 objek database pada PostgreSQL Server.
--- Idempotent (aman dijalankan ulang di Supabase SQL Editor / psql).
--- ============================================================================
 
 -- 1. VIEW: v_hotel_ringkasan
 --    Menampilkan ringkasan hotel beserta total ulasan pengguna & jumlah favorit.

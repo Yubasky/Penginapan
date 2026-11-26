@@ -1,10 +1,6 @@
 -- ============================================================================
 -- SINGGAH MEDAN — SKEMA DATABASE POSTGRESQL (K1: Perancangan Database)
 -- ============================================================================
--- Normalisasi : 3NF (Third Normal Form)
--- Target DBMS : PostgreSQL 15+ (Supabase / PostgreSQL Server)
--- Catatan     : Idempotent (aman dijalankan ulang tanpa menghapus data lama).
--- ============================================================================
 
 -- 1. Tabel users (Pengguna & Admin)
 CREATE TABLE IF NOT EXISTS users (
@@ -74,15 +70,14 @@ CREATE TABLE IF NOT EXISTS reviews (
     CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5)
 );
 
--- 4. Tabel favorites (Penginapan Favorit User)
+-- 4. Tabel favorites (Penginapan Favorit User — Composite Primary Key)
 CREATE TABLE IF NOT EXISTS favorites (
-    id          SERIAL PRIMARY KEY,
     user_id     INT       NOT NULL,
     hotel_id    INT       NOT NULL,
     created_at  TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT favorites_pkey PRIMARY KEY (user_id, hotel_id),
     CONSTRAINT fk_favorites_user  FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_favorites_hotel FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT uq_favorites_user_hotel UNIQUE (user_id, hotel_id)
+    CONSTRAINT fk_favorites_hotel FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- 5. Tabel inquiries (Pesan & Tanya Jawab Hotel)
@@ -91,12 +86,12 @@ CREATE TABLE IF NOT EXISTS inquiries (
     hotel_id      INT          NOT NULL,
     user_id       INT          NULL,
     nama          VARCHAR(150) NOT NULL,
-    email         VARCHAR(191) NULL,
+    email         VARCHAR(191) NOT NULL,
     telepon       VARCHAR(30)  NULL,
     tgl_checkin   DATE         NULL,
     tgl_checkout  DATE         NULL,
-    jumlah_tamu   INT          NULL DEFAULT 1,
-    pesan         TEXT         NOT NULL,
+    jumlah_tamu   SMALLINT     NULL DEFAULT 1,
+    pesan         TEXT         NULL,
     jawaban       TEXT         NULL,
     status        VARCHAR(30)  NOT NULL DEFAULT 'baru',
     balasan_admin TEXT         NULL,

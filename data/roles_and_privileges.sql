@@ -1,13 +1,6 @@
 -- ============================================================================
 -- SINGGAH MEDAN — USER & HAK AKSES DATABASE (K2: Least Privilege)
 -- ============================================================================
--- Tujuan: Memisahkan user aplikasi runtime dari user owner/superuser (postgres).
--- Catatan Supabase:
---   Jalankan script ini di Supabase SQL Editor sebagai owner (postgres).
---   Ganti password 'GANTI_PASSWORD_AMAN_DISINI' sebelum dijalankan!
---   Pada Supabase Pooler, format username di .env adalah:
---     app_penginapan.<project_ref>  (jika koneksi via pooler) atau app_penginapan (direct).
--- ============================================================================
 
 DO $$
 BEGIN
