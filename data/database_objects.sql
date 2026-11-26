@@ -18,7 +18,7 @@ SELECT
     h.latitude,
     h.longitude,
     COUNT(DISTINCT r.id) AS total_ulasan_pengguna,
-    COUNT(DISTINCT f.id) AS total_favorit
+    COUNT(DISTINCT f.user_id) AS total_favorit
 FROM hotels h
 LEFT JOIN reviews r   ON r.hotel_id = h.id
 LEFT JOIN favorites f ON f.hotel_id = h.id
