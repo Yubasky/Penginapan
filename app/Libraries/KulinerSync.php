@@ -19,9 +19,15 @@ class KulinerSync
         $firstP = null;
 
         for ($p = 1; $p <= 100; $p++) {
-            $res = $client->halaman($p, 100);
+            $res = $client->halaman($p, 50);
             if ($res === null) {
-                return ['ok' => false, 'jumlah' => $total, 'pesan' => "Gagal menghubungi API kuliner (halaman {$p}). Cek alamat server dan koneksi."];
+                $detail = $client->lastError();
+
+                return [
+                    'ok'     => false,
+                    'jumlah' => $total,
+                    'pesan'  => "Gagal menghubungi API kuliner (halaman {$p}). " . ($detail !== '' ? $detail : 'Cek alamat server dan koneksi.'),
+                ];
             }
             $rows = $res['rows'];
             if ($rows === []) {
@@ -40,7 +46,8 @@ class KulinerSync
                 $model->upsert($r);
                 $total++;
             }
-            if (count($rows) < 100 || ($res['total_pages'] !== null && $p >= $res['total_pages'])) {
+            $perPage = $res['per_page'] ?? 50;
+            if (count($rows) < $perPage || ($res['total_pages'] !== null && $p >= $res['total_pages'])) {
                 break;
             }
         }
