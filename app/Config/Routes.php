@@ -81,6 +81,7 @@ $apiRoutes = static function (RouteCollection $routes): void {
 
     // Autentikasi terpadu (JWT)
     $routes->post('auth/login', 'Auth::login');
+    $routes->post('auth/register', 'Auth::register');
     $routes->get('auth/me', 'Auth::me');
 
     // Penginapan (CRUD & Kecamatan)
