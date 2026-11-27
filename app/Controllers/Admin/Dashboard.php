@@ -20,13 +20,10 @@ class Dashboard extends AppBase
                     return redirect()->to(site_url('admin'))->with('error', 'Sesi form kedaluwarsa. Silakan coba lagi.');
                 }
 
-                $login    = strtolower(trim((string) $this->request->getPost('email')));
+                $login    = trim((string) $this->request->getPost('email'));
                 $password = (string) $this->request->getPost('password');
 
-                $u = (new UserModel())->groupStart()
-                    ->where('email', $login)
-                    ->orWhere('nama', $login)
-                    ->groupEnd()->first();
+                $u = (new UserModel())->findByLogin($login);
 
                 if (! $u || ! password_verify($password, $u['password_hash'])) {
                     return redirect()->to(site_url('admin'))->withInput()->with('error', 'Email/username atau password admin salah.');

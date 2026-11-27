@@ -172,5 +172,15 @@ class HotelModel extends Model
             'rating'        => $finalRating,
             'jumlah_ulasan' => $totalCount,
         ]);
+        $this->hapusCache();
+    }
+
+    /** Bersihkan cache statistik, daftar kecamatan, dan total koordinat hotel. */
+    public function hapusCache(): void
+    {
+        $cache = cache();
+        $cache->delete('stats_hotel');
+        $cache->delete('daftar_kecamatan');
+        $cache->delete('total_geo');
     }
 }

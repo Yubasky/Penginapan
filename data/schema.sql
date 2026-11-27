@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS inquiries (
     hotel_id      INT          NOT NULL,
     user_id       INT          NULL,
     nama          VARCHAR(150) NOT NULL,
-    email         VARCHAR(191) NOT NULL,
+    email         VARCHAR(191) NULL,
     telepon       VARCHAR(30)  NULL,
     tgl_checkin   DATE         NULL,
     tgl_checkout  DATE         NULL,

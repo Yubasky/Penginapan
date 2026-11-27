@@ -31,12 +31,7 @@ class Auth extends ApiBase
             ], 422);
         }
 
-        $u = (new UserModel())
-            ->groupStart()
-            ->where('email', $login)
-            ->orWhere('nama', $login)
-            ->groupEnd()
-            ->first();
+        $u = (new UserModel())->findByLogin($login);
 
         if (! $u || ! password_verify($password, (string) $u['password_hash'])) {
             return $this->json([

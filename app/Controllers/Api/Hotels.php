@@ -136,7 +136,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat membuat hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        $m->hapusCache();
         $saved = $m->find($id);
 
         return $this->json([
@@ -232,7 +232,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat memperbarui hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        $m->hapusCache();
 
         return $this->json([
             'status'  => 'ok',
@@ -270,7 +270,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat menghapus hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        $m->hapusCache();
 
         return $this->json([
             'status'  => 'ok',

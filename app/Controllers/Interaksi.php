@@ -140,10 +140,10 @@ class Interaksi extends AppBase
         return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', 'Ulasanmu berhasil dihapus.');
     }
 
-    /** Tanya seputar hotel (Q&A Publik). */
+    /** Tanya seputar hotel (Q&A Publik — wajib login). */
     public function tanya(int $id)
     {
-        if ($r = $this->gerbangPost(false)) {
+        if ($r = $this->gerbangPost()) {
             return $r;
         }
         $hotel = $this->hotelAtau404($id);
@@ -156,23 +156,20 @@ class Interaksi extends AppBase
         $u  = $this->user();
         $ok = $this->validate([
             'pertanyaan' => 'required|min_length[5]|max_length[1000]',
-            'nama'       => $u ? 'permit_empty' : 'required|max_length[100]',
+            'email'      => 'permit_empty|valid_email|max_length[191]',
         ], [
             'pertanyaan' => ['required' => 'Pertanyaan tidak boleh kosong.', 'min_length' => 'Pertanyaan minimal 5 karakter.'],
-            'nama'       => ['required' => 'Nama penanya wajib diisi.'],
+            'email'      => ['valid_email' => 'Format email tidak valid.', 'max_length' => 'Email maksimal 191 karakter.'],
         ]);
         if (! $ok) {
             return redirect()->to($balik)->withInput()->with('error', implode(' ', $this->validator->getErrors()));
         }
 
-        $nama  = $u ? $u['nama'] : trim((string) $this->request->getPost('nama'));
-        $email = $u ? $u['email'] : ($this->request->getPost('email') ? strtolower(trim((string) $this->request->getPost('email'))) : null);
-
         (new InquiryModel())->insert([
             'hotel_id' => $id,
-            'user_id'  => $u['id'] ?? null,
-            'nama'     => $nama,
-            'email'    => $email,
+            'user_id'  => (int) $u['id'],
+            'nama'     => $u['nama'],
+            'email'    => $u['email'],
             'pesan'    => trim((string) $this->request->getPost('pertanyaan')),
             'status'   => 'baru',
             'jawaban'  => json_encode([]),
@@ -206,29 +203,49 @@ class Interaksi extends AppBase
 
         $u    = $this->user();
         $role = $u['role'] ?? 'user';
-        $list = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
         $teks = trim((string) $this->request->getPost('jawaban'));
+        $db   = db_connect();
+        $db->transBegin();
 
-        $list[] = [
-            'id'         => bin2hex(random_bytes(6)),
-            'user_id'    => (int) $u['id'],
-            'nama'       => $u['nama'],
-            'role'       => $role,
-            'isi'        => $teks,
-            'created_at' => date('Y-m-d H:i:s'),
-        ];
+        try {
+            $locked = $m->findForUpdate($inquiryId);
+            if (! $locked) {
+                $db->transRollback();
+                throw PageNotFoundException::forPageNotFound();
+            }
 
-        $updateData = [
-            'jawaban' => json_encode($list),
-        ];
+            $list   = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
+            $list[] = [
+                'id'         => bin2hex(random_bytes(6)),
+                'user_id'    => (int) $u['id'],
+                'nama'       => $u['nama'],
+                'role'       => $role,
+                'isi'        => $teks,
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
 
-        if ($role === 'admin') {
-            $updateData['balasan_admin'] = $teks;
-            $updateData['dibalas_at']    = date('Y-m-d H:i:s');
-            $updateData['status']        = 'selesai';
+            $updateData = ['jawaban' => json_encode($list)];
+            if ($role === 'admin') {
+                $updateData['balasan_admin'] = $teks;
+                $updateData['dibalas_at']    = date('Y-m-d H:i:s');
+                $updateData['status']        = 'selesai';
+            }
+
+            $m->update($inquiryId, $updateData);
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->to($balik)->with('error', 'Gagal menyimpan jawaban.');
+            }
+            $db->transCommit();
+        } catch (PageNotFoundException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Interaksi::jawab gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->to($balik)->with('error', 'Terjadi kesalahan saat mengirim jawaban.');
         }
-
-        $m->update($inquiryId, $updateData);
 
         return redirect()->to($balik)->with('ok', 'Jawaban berhasil dikirim.');
     }
