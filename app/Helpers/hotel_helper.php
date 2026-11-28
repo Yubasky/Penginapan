@@ -367,12 +367,16 @@ if (! function_exists('paginasi')) {
 if (! function_exists('kuliner_card')) {
     function kuliner_card(array $k): string
     {
-        $jarak = isset($k['jarak']) && $k['jarak'] !== null && $k['jarak'] !== '' ? (float) $k['jarak'] : null;
+        $jarak     = isset($k['jarak']) && $k['jarak'] !== null && $k['jarak'] !== '' ? (float) $k['jarak'] : null;
+        $detailUrl = ! empty($k['id']) ? site_url('kuliner/' . rawurlencode((string) $k['id'])) : ($k['url'] ?? '');
+        $external  = empty($k['id']) && ! empty($k['url']);
         ob_start(); ?>
         <article class="food__item" data-lat="<?= $k['latitude'] ?? '' ?>" data-lng="<?= $k['longitude'] ?? '' ?>">
-            <?php if (! empty($k['foto'])): ?><img src="<?= esc($k['foto'], 'attr') ?>" alt="" loading="lazy"><?php endif; ?>
+            <?php if (! empty($k['foto'])): ?>
+                <?php if ($detailUrl !== ''): ?><a href="<?= esc($detailUrl, 'attr') ?>"<?= $external ? ' target="_blank" rel="noopener"' : '' ?>><img src="<?= esc($k['foto'], 'attr') ?>" alt="<?= esc($k['nama'], 'attr') ?>" loading="lazy"></a><?php else: ?><img src="<?= esc($k['foto'], 'attr') ?>" alt="" loading="lazy"><?php endif; ?>
+            <?php endif; ?>
             <div>
-                <h3><?php if (! empty($k['url'])): ?><a href="<?= esc($k['url'], 'attr') ?>" target="_blank" rel="noopener"><?= esc($k['nama']) ?></a><?php else: ?><?= esc($k['nama']) ?><?php endif; ?></h3>
+                <h3><?php if ($detailUrl !== ''): ?><a href="<?= esc($detailUrl, 'attr') ?>"<?= $external ? ' target="_blank" rel="noopener"' : '' ?>><?= esc($k['nama']) ?></a><?php else: ?><?= esc($k['nama']) ?><?php endif; ?></h3>
                 <p class="muted"><?= esc(trim(($k['kategori'] ?? '') . (! empty($k['harga']) ? ' · ' . $k['harga'] : ''), ' ·')) ?></p>
                 <?php if (! empty($k['alamat'])): ?><p class="small"><?= esc($k['alamat']) ?></p><?php endif; ?>
                 <div style="display:flex;align-items:center;gap:.6rem;margin-top:.4rem;flex-wrap:wrap">

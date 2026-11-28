@@ -127,8 +127,6 @@ class Filters extends BaseFilters
             'before' => [
                 'admin/hotel',
                 'admin/hotel/*',
-                'admin/pesan',
-                'admin/pesan/*',
                 'admin/ulasan',
                 'admin/ulasan/*',
                 'admin/pengguna',

@@ -11,6 +11,7 @@ $routes->get('penginapan', 'Hotel::index');
 $routes->get('penginapan/(:segment)', 'Hotel::show/$1');
 $routes->get('peta', 'Peta::index');
 $routes->get('kuliner', 'Kuliner::index');
+$routes->get('kuliner/(:segment)', 'Kuliner::show/$1');
 $routes->get('cari', 'Kuliner::cari');
 
 $routes->get('bandingkan', static function () {
@@ -52,9 +53,6 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static functio
     $routes->get('hotel/(:num)/ubah', 'Hotels::ubah/$1');
     $routes->post('hotel/(:num)/hapus', 'Hotels::hapus/$1');
 
-    $routes->get('pesan', 'Pesan::index');
-    $routes->post('pesan/(:num)/status', 'Pesan::status/$1');
-
     $routes->get('ulasan', 'Ulasan::index');
     $routes->post('ulasan/(:num)/hapus', 'Ulasan::hapus/$1');
 
@@ -72,7 +70,6 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static functio
 
     // ---- Laporan Cetak / PDF ----
     $routes->get('laporan/hotel', 'Laporan::hotel');
-    $routes->get('laporan/pesan', 'Laporan::pesan');
 });
 
 // ---- API tukar data & client (JSON) — mendukung /api/* dan /api/v1/* ----

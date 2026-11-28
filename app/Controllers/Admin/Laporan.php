@@ -3,8 +3,6 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\AppBase;
-use App\Models\HotelModel;
-use App\Models\InquiryModel;
 
 class Laporan extends AppBase
 {
@@ -29,34 +27,6 @@ class Laporan extends AppBase
             'hotels' => $hotels,
             'stats'  => $stats,
             'tgl'    => date('d F Y, H:i'),
-        ]);
-    }
-
-    public function pesan()
-    {
-        if ($r = $this->butuhAdmin()) {
-            return $r;
-        }
-
-        $db = db_connect();
-        $pesan = $db->table('inquiries')
-            ->select('inquiries.*, hotels.nama AS hotel_nama')
-            ->join('hotels', 'hotels.id = inquiries.hotel_id', 'left')
-            ->orderBy('inquiries.created_at', 'DESC')
-            ->get()->getResultArray();
-
-        $stats = [
-            'total'    => count($pesan),
-            'baru'     => count(array_filter($pesan, fn ($p) => $p['status'] === 'baru')),
-            'diproses' => count(array_filter($pesan, fn ($p) => $p['status'] === 'diproses')),
-            'selesai'  => count(array_filter($pesan, fn ($p) => $p['status'] === 'selesai')),
-        ];
-
-        return view('admin/laporan/pesan', [
-            'title' => 'Laporan Rekapitulasi Pesan & Reservasi Tamu — Singgah Medan',
-            'pesan' => $pesan,
-            'stats' => $stats,
-            'tgl'   => date('d F Y, H:i'),
         ]);
     }
 }

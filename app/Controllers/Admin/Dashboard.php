@@ -62,14 +62,18 @@ class Dashboard extends AppBase
                 'geo'       => $db->table('hotels')->where('latitude IS NOT NULL', null, false)->countAllResults(),
                 'pengguna'  => $n('users'),
                 'ulasan'    => $n('reviews'),
-                'pesan'     => $n('inquiries'),
-                'pesanBaru' => $n('inquiries', ['status' => 'baru']),
                 'kuliner'   => $n('kuliner'),
                 'apikey'    => $n('api_keys', ['aktif' => 'true']),
             ],
-            'pesanTerbaru' => $db->table('inquiries')->select('inquiries.*, hotels.nama AS hotel_nama')
-                ->join('hotels', 'hotels.id = inquiries.hotel_id')->orderBy('inquiries.created_at', 'DESC')->limit(5)->get()->getResultArray(),
-            'syncTerakhir' => $db->table('kuliner')->selectMax('synced_at')->get()->getRowArray()['synced_at'] ?? null,
+            'syncTerakhir'  => $db->table('kuliner')->selectMax('synced_at')->get()->getRowArray()['synced_at'] ?? null,
+            'ulasanTerbaru' => $db->table('reviews r')
+                ->select('r.id, r.rating, r.judul, r.isi, r.created_at, u.nama AS penulis, h.nama AS hotel_nama, h.slug AS hotel_slug')
+                ->join('users u', 'u.id = r.user_id')
+                ->join('hotels h', 'h.id = r.hotel_id')
+                ->orderBy('r.created_at', 'DESC')
+                ->limit(8)
+                ->get()
+                ->getResultArray(),
         ]);
     }
 }

@@ -137,6 +137,31 @@ class HotelModel extends Model
             ->findAll($n);
     }
 
+    /** Ambil hotel terdekat dari koordinat restoran/lokasi tertentu (Haversine km). */
+    public function terdekatDari(float $lat, float $lng, int $limit = 3, ?string $kecamatan = null): array
+    {
+        $haversine = "(6371 * acos(least(1.0, greatest(-1.0, cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude))))))";
+
+        $results = $this->select("id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude, {$haversine} AS jarak", false)
+            ->where('latitude IS NOT NULL', null, false)
+            ->where('longitude IS NOT NULL', null, false)
+            ->orderBy('jarak', 'ASC')
+            ->findAll($limit);
+
+        if (count($results) < $limit && ! empty($kecamatan)) {
+            $ids      = array_column($results, 'id');
+            $fallback = $this->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude')
+                ->where('kecamatan', $kecamatan);
+            if (! empty($ids)) {
+                $fallback->whereNotIn('id', $ids);
+            }
+            $extra   = $fallback->orderBy('rating DESC NULLS LAST', '', false)->findAll($limit - count($results));
+            $results = array_merge($results, $extra);
+        }
+
+        return $results;
+    }
+
     /** Sinkronisasi rating dan jumlah ulasan hotel secara dinamis dari gabungan data awal + ulasan pengguna. */
     public function sinkronRating(int $hotelId): void
     {

@@ -2,8 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Libraries\KulinerClient;
 use App\Models\HotelModel;
 use App\Models\KulinerModel;
+use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Kuliner extends AppBase
 {
@@ -36,6 +38,49 @@ class Kuliner extends AppBase
             'page'      => $m->pager->getCurrentPage(),
             'pages'     => $m->pager->getPageCount(),
             'kecamatan' => (new KulinerModel())->daftarKecamatan(),
+        ]);
+    }
+
+    /** Halaman detail restoran kuliner terintegrasi di dalam Singgah Medan. */
+    public function show(string $idOrSumber)
+    {
+        $km = new KulinerModel();
+        $k  = is_numeric($idOrSumber) ? $km->find((int) $idOrSumber) : null;
+        if (! $k) {
+            $k = $km->where('sumber_id', $idOrSumber)->first();
+        }
+        if (! $k) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        // Ambil detail lengkap (menu, deskripsi, telepon, ulasan) dari API Kelompok Kuliner bila server mereka aktif
+        $klien  = new KulinerClient();
+        $slug   = '';
+        if (! empty($k['url'])) {
+            $path = (string) parse_url((string) $k['url'], PHP_URL_PATH);
+            $slug = trim((string) basename($path));
+        }
+        $liveDetail = $slug !== '' ? $klien->detail($slug) : null;
+        $ulasan     = ! empty($k['sumber_id']) ? $klien->ulasan((string) $k['sumber_id']) : [];
+
+        // Cari penginapan terdekat dari titik GPS atau kecamatan tempat makan ini
+        $hm     = new HotelModel();
+        $hotels = [];
+        if (! empty($k['latitude']) && ! empty($k['longitude'])) {
+            $hotels = $hm->terdekatDari((float) $k['latitude'], (float) $k['longitude'], 3, $k['kecamatan'] ?? null);
+        } elseif (! empty($k['kecamatan'])) {
+            $hotels = $hm->select('id, peringkat, nama, slug, rating, jumlah_ulasan, sarapan, alamat, kecamatan, foto, latitude, longitude')
+                ->where('kecamatan', $k['kecamatan'])
+                ->orderBy('rating DESC NULLS LAST', '', false)
+                ->findAll(3);
+        }
+
+        return view('kuliner/show', [
+            'title'      => $k['nama'] . ' — Kuliner Medan · Singgah Medan',
+            'k'          => $k,
+            'liveDetail' => $liveDetail,
+            'ulasan'     => $ulasan,
+            'hotels'     => $hotels,
         ]);
     }
 

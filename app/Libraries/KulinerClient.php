@@ -32,7 +32,7 @@ class KulinerClient
         return (string) preg_replace('#/(api(/v\d+|/kuliner)?)$#i', '', $url);
     }
 
-    private function get(string $path, array $query = []): ?array
+    private function get(string $path, array $query = [], int $timeout = 30): ?array
     {
         $this->lastError = '';
         $origin          = $this->baseOrigin();
@@ -53,8 +53,8 @@ class KulinerClient
             }
 
             $client = \Config\Services::curlrequest([
-                'timeout'         => 30,
-                'connect_timeout' => 10,
+                'timeout'         => $timeout,
+                'connect_timeout' => min($timeout, 10),
                 'http_errors'     => false,
             ]);
             $res = $client->get($origin . '/api/v1/' . ltrim($path, '/'), [
@@ -165,6 +165,47 @@ class KulinerClient
             'total_pages' => isset($json['meta']['total_pages']) ? (int) $json['meta']['total_pages'] : null,
             'per_page'    => isset($json['meta']['per_page']) ? (int) $json['meta']['per_page'] : $perPage,
         ];
+    }
+
+    /** Ambil detail restoran + menu langsung dari API Kelompok Kuliner (/api/v1/restoran/{slug}). */
+    public function detail(string $slug): ?array
+    {
+        if (! $this->enabled() || $slug === '') {
+            return null;
+        }
+        $key = 'kuliner_detail_' . md5($slug);
+        $hit = cache($key);
+        if (is_array($hit)) {
+            return $hit;
+        }
+        $json = $this->get('restoran/' . rawurlencode($slug), [], 4);
+        $data = is_array($json) ? ($json['data'] ?? $json) : null;
+        if (! is_array($data) || empty($data['nama'])) {
+            cache()->save($key, [], 60);
+
+            return null;
+        }
+        cache()->save($key, $data, 300);
+
+        return $data;
+    }
+
+    /** Ambil ulasan pengunjung restoran dari API Kelompok Kuliner (/api/v1/restoran/{id}/ulasan). */
+    public function ulasan(string $restoranId): array
+    {
+        if (! $this->enabled() || $restoranId === '') {
+            return [];
+        }
+        $key = 'kuliner_ulasan_' . md5($restoranId);
+        $hit = cache($key);
+        if (is_array($hit)) {
+            return $hit;
+        }
+        $json = $this->get('restoran/' . rawurlencode($restoranId) . '/ulasan', [], 4);
+        $rows = is_array($json) && is_array($json['data'] ?? null) ? $json['data'] : [];
+        cache()->save($key, $rows, $json === null ? 60 : 300);
+
+        return $rows;
     }
 
     public function normalize(array $r): array
