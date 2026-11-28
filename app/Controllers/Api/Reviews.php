@@ -136,7 +136,7 @@ class Reviews extends ApiBase
 
     /**
      * PUT/PATCH /api/v1/reviews/{id}
-     * Memperbarui ulasan (hanya pemilik ulasan, admin, atau mitra; mendukung optimistic locking updated_at).
+     * Memperbarui ulasan (hanya pemilik ulasan lewat JWT atau admin; API Key mitra tidak diizinkan).
      */
     public function update(int $id): ResponseInterface
     {
@@ -150,8 +150,8 @@ class Reviews extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Ulasan tidak ditemukan.'], 404);
         }
 
-        if ($this->tidakBolehUbahMilik($review)) {
-            return $this->json(['status' => 'error', 'message' => 'Akses ditolak (403): Anda tidak berhak mengubah ulasan pengguna lain.'], 403);
+        if ($r = $this->cekHakUbah($review, 'mengubah')) {
+            return $r;
         }
 
         $json = $this->request->getJSON(true) ?: [];
@@ -221,7 +221,7 @@ class Reviews extends ApiBase
 
     /**
      * DELETE /api/v1/reviews/{id}
-     * Menghapus ulasan berdasarkan ID ulasan.
+     * Menghapus ulasan berdasarkan ID ulasan (hanya pemilik ulasan lewat JWT atau admin; API Key mitra tidak diizinkan).
      */
     public function delete(int $id): ResponseInterface
     {
@@ -235,8 +235,8 @@ class Reviews extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Ulasan tidak ditemukan.'], 404);
         }
 
-        if ($this->tidakBolehUbahMilik($review)) {
-            return $this->json(['status' => 'error', 'message' => 'Akses ditolak (403): Anda tidak berhak menghapus ulasan pengguna lain.'], 403);
+        if ($r = $this->cekHakUbah($review, 'menghapus')) {
+            return $r;
         }
 
         $hotelId = (int) $review['hotel_id'];
@@ -267,14 +267,32 @@ class Reviews extends ApiBase
         ]);
     }
 
+    private function cekHakUbah(array $review, string $aksi): ?ResponseInterface
+    {
+        if (! $this->tidakBolehUbahMilik($review)) {
+            return null;
+        }
+
+        $msg = ($this->authActor['type'] ?? '') === 'partner'
+            ? "Akses ditolak (403): API Key mitra tidak berhak {$aksi} ulasan. Gunakan login JWT pemilik ulasan atau admin."
+            : "Akses ditolak (403): Anda tidak berhak {$aksi} ulasan pengguna lain.";
+
+        return $this->json(['status' => 'error', 'message' => $msg], 403);
+    }
+
     private function tidakBolehUbahMilik(array $review): bool
     {
         $type = $this->authActor['type'] ?? '';
         $role = $this->authActor['role'] ?? '';
-        if ($type === 'partner' || $role === 'admin') {
+
+        if ($type === 'user' && $role === 'admin') {
             return false;
         }
 
-        return (int) ($review['user_id'] ?? 0) !== (int) ($this->authActor['id'] ?? -1);
+        if ($type !== 'user' || empty($this->authActor['id'])) {
+            return true;
+        }
+
+        return (int) ($review['user_id'] ?? 0) !== (int) $this->authActor['id'];
     }
 }
