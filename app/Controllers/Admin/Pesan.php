@@ -41,15 +41,17 @@ class Pesan extends AppBase
         if (in_array($s, ['baru', 'diproses', 'selesai'], true)) {
             $data['status'] = $s;
         }
-        if ($this->request->getPost('balasan_admin') !== null) {
-            $data['balasan_admin'] = $balasan !== '' ? $balasan : null;
-            $data['dibalas_at']    = $balasan !== '' ? date('Y-m-d H:i:s') : null;
 
-            if ($balasan !== '') {
-                $mInq = new InquiryModel();
-                $inq  = $mInq->find($id);
-                if ($inq) {
-                    $jawaban = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
+        $db = db_connect();
+        $db->transBegin();
+        try {
+            $locked = $db->query('SELECT id, jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$id])->getRowArray();
+            if ($locked && $this->request->getPost('balasan_admin') !== null) {
+                $data['balasan_admin'] = $balasan !== '' ? $balasan : null;
+                $data['dibalas_at']    = $balasan !== '' ? date('Y-m-d H:i:s') : null;
+
+                if ($balasan !== '') {
+                    $jawaban   = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
                     $jawaban[] = [
                         'id'         => bin2hex(random_bytes(6)),
                         'user_id'    => session('user')['id'] ?? null,
@@ -61,10 +63,16 @@ class Pesan extends AppBase
                     $data['jawaban'] = json_encode($jawaban);
                 }
             }
-        }
 
-        if ($data) {
-            (new InquiryModel())->update($id, $data);
+            if ($data) {
+                (new InquiryModel())->update($id, $data);
+            }
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Admin\Pesan::status gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->back()->with('error', 'Gagal memperbarui pesan.');
         }
 
         return redirect()->back()->with('ok', 'Pesan dan status berhasil diperbarui.');

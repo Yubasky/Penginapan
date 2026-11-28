@@ -156,17 +156,19 @@ class Interaksi extends AppBase
         $u  = $this->user();
         $ok = $this->validate([
             'pertanyaan' => 'required|min_length[5]|max_length[1000]',
-            'nama'       => $u ? 'permit_empty' : 'required|max_length[100]',
+            'nama'       => $u ? 'permit_empty' : 'required|max_length[150]',
+            'email'      => $u ? 'permit_empty' : 'permit_empty|valid_email|max_length[191]',
         ], [
             'pertanyaan' => ['required' => 'Pertanyaan tidak boleh kosong.', 'min_length' => 'Pertanyaan minimal 5 karakter.'],
             'nama'       => ['required' => 'Nama penanya wajib diisi.'],
+            'email'      => ['valid_email' => 'Format email tidak valid.', 'max_length' => 'Email maksimal 191 karakter.'],
         ]);
         if (! $ok) {
             return redirect()->to($balik)->withInput()->with('error', implode(' ', $this->validator->getErrors()));
         }
 
-        $nama  = $u ? $u['nama'] : trim((string) $this->request->getPost('nama'));
-        $email = $u ? $u['email'] : ($this->request->getPost('email') ? strtolower(trim((string) $this->request->getPost('email'))) : null);
+        $nama  = $u ? $u['nama'] : mb_substr(trim((string) $this->request->getPost('nama')), 0, 150);
+        $email = $u ? $u['email'] : ($this->request->getPost('email') ? strtolower(trim((string) $this->request->getPost('email'))) : '');
 
         (new InquiryModel())->insert([
             'hotel_id' => $id,
@@ -206,29 +208,43 @@ class Interaksi extends AppBase
 
         $u    = $this->user();
         $role = $u['role'] ?? 'user';
-        $list = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
         $teks = trim((string) $this->request->getPost('jawaban'));
+        $db   = db_connect();
+        $db->transBegin();
 
-        $list[] = [
-            'id'         => bin2hex(random_bytes(6)),
-            'user_id'    => (int) $u['id'],
-            'nama'       => $u['nama'],
-            'role'       => $role,
-            'isi'        => $teks,
-            'created_at' => date('Y-m-d H:i:s'),
-        ];
+        try {
+            $locked = $db->query('SELECT jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
+            if (! $locked) {
+                $db->transRollback();
 
-        $updateData = [
-            'jawaban' => json_encode($list),
-        ];
+                return redirect()->to($balik)->with('error', 'Pertanyaan tidak ditemukan.');
+            }
+            $list = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
 
-        if ($role === 'admin') {
-            $updateData['balasan_admin'] = $teks;
-            $updateData['dibalas_at']    = date('Y-m-d H:i:s');
-            $updateData['status']        = 'selesai';
+            $list[] = [
+                'id'         => bin2hex(random_bytes(6)),
+                'user_id'    => (int) $u['id'],
+                'nama'       => $u['nama'],
+                'role'       => $role,
+                'isi'        => $teks,
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+
+            $updateData = ['jawaban' => json_encode($list)];
+            if ($role === 'admin') {
+                $updateData['balasan_admin'] = $teks;
+                $updateData['dibalas_at']    = date('Y-m-d H:i:s');
+                $updateData['status']        = 'selesai';
+            }
+
+            $m->update($inquiryId, $updateData);
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Interaksi::jawab gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->to($balik)->with('error', 'Gagal menyimpan jawaban.');
         }
-
-        $m->update($inquiryId, $updateData);
 
         return redirect()->to($balik)->with('ok', 'Jawaban berhasil dikirim.');
     }
@@ -352,16 +368,54 @@ class Interaksi extends AppBase
         }
 
         $teks = trim((string) $this->request->getPost('jawaban'));
-        $list[$foundIndex]['isi']        = $teks;
-        $list[$foundIndex]['updated_at'] = date('Y-m-d H:i:s');
+        $db   = db_connect();
+        $db->transBegin();
 
-        $updateData = ['jawaban' => json_encode(array_values($list))];
-        if ($isAdmin && ($isAnsAdmin || $targetAns['id'] === 'admin_legacy')) {
-            $updateData['balasan_admin'] = $teks;
-            $updateData['dibalas_at']    = date('Y-m-d H:i:s');
+        try {
+            $locked = $db->query('SELECT jawaban, balasan_admin, dibalas_at, updated_at FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
+            $fresh  = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
+
+            $idx = -1;
+            foreach ($fresh as $i => $ans) {
+                if (($ans['id'] ?? '') === $answerId) {
+                    $idx = $i;
+                    break;
+                }
+            }
+            if ($idx === -1 && $answerId === 'admin_legacy' && ! empty($locked['balasan_admin'])) {
+                $fresh[] = [
+                    'id'         => 'admin_legacy',
+                    'user_id'    => null,
+                    'nama'       => 'Pengelola Hotel / Admin',
+                    'role'       => 'admin',
+                    'isi'        => $locked['balasan_admin'],
+                    'created_at' => $locked['dibalas_at'] ?? $locked['updated_at'],
+                ];
+                $idx = count($fresh) - 1;
+            }
+            if ($idx === -1) {
+                $db->transRollback();
+
+                return redirect()->back()->with('error', 'Jawaban tidak ditemukan.');
+            }
+
+            $fresh[$idx]['isi']        = $teks;
+            $fresh[$idx]['updated_at'] = date('Y-m-d H:i:s');
+
+            $updateData = ['jawaban' => json_encode(array_values($fresh))];
+            if ($isAdmin && (($fresh[$idx]['role'] ?? '') === 'admin' || $answerId === 'admin_legacy')) {
+                $updateData['balasan_admin'] = $teks;
+                $updateData['dibalas_at']    = date('Y-m-d H:i:s');
+            }
+
+            $m->update($inquiryId, $updateData);
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Interaksi::editJawaban gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->back()->with('error', 'Gagal memperbarui jawaban.');
         }
-
-        $m->update($inquiryId, $updateData);
 
         return redirect()->back()->with('ok', 'Jawaban berhasil diperbarui.');
     }
@@ -382,42 +436,58 @@ class Interaksi extends AppBase
         $isAdmin = ($u['role'] ?? '') === 'admin';
         $list    = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
 
-        $newList     = [];
-        $deleted     = false;
-        $wasAdminAns = false;
+        $db = db_connect();
+        $db->transBegin();
+        try {
+            $locked      = $db->query('SELECT jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
+            $fresh       = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
+            $newList     = [];
+            $deleted     = false;
+            $wasAdminAns = false;
 
-        foreach ($list as $ans) {
-            if (($ans['id'] ?? '') === $answerId) {
-                $isAuthor   = $u && (int) ($ans['user_id'] ?? 0) === (int) $u['id'];
-                $isAnsAdmin = ($ans['role'] ?? '') === 'admin';
-                if (! $isAuthor && ! $isAdmin) {
-                    return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menghapus jawaban ini.');
+            foreach ($fresh as $ans) {
+                if (($ans['id'] ?? '') === $answerId) {
+                    $isAuthor   = $u && (int) ($ans['user_id'] ?? 0) === (int) $u['id'];
+                    $isAnsAdmin = ($ans['role'] ?? '') === 'admin';
+                    if (! $isAuthor && ! $isAdmin) {
+                        $db->transRollback();
+
+                        return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menghapus jawaban ini.');
+                    }
+                    $deleted = true;
+                    if ($isAnsAdmin) {
+                        $wasAdminAns = true;
+                    }
+                } else {
+                    $newList[] = $ans;
                 }
-                $deleted = true;
-                if ($isAnsAdmin) {
-                    $wasAdminAns = true;
-                }
-            } else {
-                $newList[] = $ans;
             }
-        }
 
-        if ($answerId === 'admin_legacy' && $isAdmin) {
-            $deleted     = true;
-            $wasAdminAns = true;
-        }
+            if ($answerId === 'admin_legacy' && $isAdmin) {
+                $deleted     = true;
+                $wasAdminAns = true;
+            }
 
-        if (! $deleted) {
-            return redirect()->back()->with('error', 'Jawaban tidak ditemukan.');
-        }
+            if (! $deleted) {
+                $db->transRollback();
 
-        $updateData = ['jawaban' => json_encode(array_values($newList))];
-        if ($wasAdminAns) {
-            $updateData['balasan_admin'] = null;
-            $updateData['dibalas_at']    = null;
-        }
+                return redirect()->back()->with('error', 'Jawaban tidak ditemukan.');
+            }
 
-        $m->update($inquiryId, $updateData);
+            $updateData = ['jawaban' => json_encode(array_values($newList))];
+            if ($wasAdminAns) {
+                $updateData['balasan_admin'] = null;
+                $updateData['dibalas_at']    = null;
+            }
+
+            $m->update($inquiryId, $updateData);
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Interaksi::hapusJawaban gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->back()->with('error', 'Gagal menghapus jawaban.');
+        }
 
         return redirect()->back()->with('ok', 'Jawaban berhasil dihapus.');
     }

@@ -25,7 +25,8 @@ class HotelSeeder extends Seeder
         }
         fclose($fh);
 
-        $this->db->table('hotels')->truncate();
+        // PostgreSQL membutuhkan CASCADE saat TRUNCATE tabel yang direferensikan FK
+        $this->db->query('TRUNCATE TABLE hotels RESTART IDENTITY CASCADE');
         $this->db->table('hotels')->insertBatch($rows);
     }
 }

@@ -30,8 +30,8 @@ class Auth extends AppBase
             }
             $login = strtolower(trim((string) $this->request->getPost('email')));
             $u     = (new UserModel())->groupStart()
-                ->where('email', $login)
-                ->orWhere('nama', $login)
+                ->where('LOWER(email)', $login)
+                ->orWhere('LOWER(nama)', $login)
                 ->groupEnd()->first();
             if (! $u || ! password_verify((string) $this->request->getPost('password'), $u['password_hash'])) {
                 return redirect()->back()->withInput()->with('error', 'Email/username atau password salah.');
@@ -52,8 +52,8 @@ class Auth extends AppBase
             if (! $this->tokenOk()) {
                 return redirect()->back()->with('error', 'Sesi form kedaluwarsa, coba lagi.');
             }
-            // Rapikan nomor HP (hapus spasi, tanda hubung, tanda kurung) sebelum divalidasi
-            $noHp = preg_replace('/[\s\-().]/', '', (string) $this->request->getPost('no_hp'));
+            // Samakan format nomor HP (+62812... / 62812... / 0812... -> 0812...) sebelum validasi & is_unique
+            $noHp = $this->normHp((string) $this->request->getPost('no_hp'));
             $data = [
                 'nama'          => trim((string) $this->request->getPost('nama')),
                 'email'         => strtolower(trim((string) $this->request->getPost('email'))),

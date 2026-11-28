@@ -24,8 +24,8 @@ class Dashboard extends AppBase
                 $password = (string) $this->request->getPost('password');
 
                 $u = (new UserModel())->groupStart()
-                    ->where('email', $login)
-                    ->orWhere('nama', $login)
+                    ->where('LOWER(email)', $login)
+                    ->orWhere('LOWER(nama)', $login)
                     ->groupEnd()->first();
 
                 if (! $u || ! password_verify($password, $u['password_hash'])) {

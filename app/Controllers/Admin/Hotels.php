@@ -134,15 +134,24 @@ class Hotels extends AppBase
         $data['foto_fasilitas'] = ! empty($facList) ? json_encode($facList) : null;
 
         if ($id) {
+            $userRev = db_connect()->table('reviews')->where('hotel_id', $id)->countAllResults();
+            if ($userRev === 0) {
+                $data['rating_awal']        = $data['rating'];
+                $data['jumlah_ulasan_awal'] = $data['jumlah_ulasan'] ?? 0;
+            }
             $m->update($id, $data);
             $msg = 'Hotel diperbarui.';
         } else {
-            $maks             = $this->maksPeringkat();
-            $data['peringkat'] = $maks + 1;
-            $data['slug']      = $this->slugUnik($data['nama'], $data['peringkat']);
+            $maks                       = $this->maksPeringkat();
+            $data['peringkat']          = $maks + 1;
+            $data['slug']               = $this->slugUnik($data['nama'], $data['peringkat']);
+            $data['rating_awal']        = $data['rating'];
+            $data['jumlah_ulasan_awal'] = $data['jumlah_ulasan'] ?? 0;
             $m->insert($data);
             $msg = 'Hotel ditambahkan.';
         }
+
+        HotelModel::hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', $msg);
     }
@@ -153,6 +162,7 @@ class Hotels extends AppBase
             return $r;
         }
         (new HotelModel())->delete($id);
+        HotelModel::hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', 'Hotel dihapus (beserta ulasan, favorit, dan pesan terkait).');
     }
@@ -185,62 +195,102 @@ class Hotels extends AppBase
         }
 
         $m      = new HotelModel();
+        $db     = db_connect();
         $baru   = $ubah = $lewat = 0;
         $maks   = $this->maksPeringkat();
         $angka  = ['peringkat', 'halaman', 'jumlah_ulasan', 'rating_ulasan', 'rating', 'latitude', 'longitude'];
         $kolom  = ['peringkat', 'halaman', 'nama', 'slug', 'rating', 'jumlah_ulasan', 'sarapan', 'reviewer', 'rating_ulasan', 'tanggal_ulasan', 'judul_ulasan', 'link_tripadvisor', 'alamat', 'kecamatan', 'latitude', 'longitude'];
+        $batas  = ['nama' => 255, 'slug' => 255, 'kecamatan' => 80, 'reviewer' => 150, 'tanggal_ulasan' => 30];
 
-        while (($r = fgetcsv($fh, 0, ',', '"', '')) !== false) {
-            if (count($r) !== count($head)) {
-                $lewat++;
-                continue;
-            }
-            $row = array_combine($head, $r);
-            $d   = [];
-            foreach ($kolom as $k) {
-                if (array_key_exists($k, $row)) {
-                    $v    = $this->nullable($row[$k]);
-                    $d[$k] = ($v !== null && in_array($k, $angka, true) && ! is_numeric($v)) ? null : $v;
+        $db->transBegin();
+        try {
+            while (($r = fgetcsv($fh, 0, ',', '"', '')) !== false) {
+                if (count($r) !== count($head)) {
+                    $lewat++;
+                    continue;
                 }
-            }
-            if (empty($d['nama']) || empty($d['alamat'])) {
-                $lewat++;
-                continue;
-            }
-            if (isset($d['sarapan']) && ! in_array($d['sarapan'], ['Tidak', 'Ya', 'All-in'], true)) {
-                $d['sarapan'] = 'Tidak';
-            }
-            $d['sarapan'] = $d['sarapan'] ?? 'Tidak';
-
-            $ada = null;
-            if (! empty($d['slug'])) {
-                $ada = $m->where('slug', $d['slug'])->first();
-            }
-            if (! $ada && ! empty($d['nama'])) {
-                $ada = $m->where('LOWER(TRIM(nama))', strtolower(trim($d['nama'])))->first();
-            }
-
-            if ($ada) {
-                // Perbarui hanya kolom yang ada isinya di CSV (agar data penting tidak terhapus)
-                $updateData = [];
-                foreach ($d as $col => $val) {
-                    if ($val !== null && $val !== '') {
-                        $updateData[$col] = $val;
+                $row = array_combine($head, $r);
+                $d   = [];
+                foreach ($kolom as $k) {
+                    if (array_key_exists($k, $row)) {
+                        $v = $this->nullable($row[$k]);
+                        if ($v !== null && in_array($k, $angka, true)) {
+                            $v = is_numeric($v) ? $v : null;
+                        } elseif ($v !== null && isset($batas[$k])) {
+                            $v = mb_substr((string) $v, 0, $batas[$k]);
+                        }
+                        $d[$k] = $v;
                     }
                 }
-                if (! empty($updateData)) {
-                    $m->update($ada['id'], $updateData);
+                if (empty($d['nama']) || empty($d['alamat'])) {
+                    $lewat++;
+                    continue;
                 }
-                $ubah++;
-            } else {
-                $d['peringkat'] = $d['peringkat'] ?? ++$maks;
-                $maks           = max($maks, (int) $d['peringkat']);
-                $d['slug']      = $this->slugUnik($d['nama'], (int) $d['peringkat'], $d['slug'] ?? null);
-                $m->insert($d);
-                $baru++;
+                // Validasi rentang nilai numerik agar tidak memicu CHECK constraint error
+                if (isset($d['rating']) && ((float) $d['rating'] < 0 || (float) $d['rating'] > 5)) {
+                    $d['rating'] = null;
+                }
+                if (isset($d['jumlah_ulasan']) && (int) $d['jumlah_ulasan'] < 0) {
+                    $d['jumlah_ulasan'] = 0;
+                }
+                if (isset($d['latitude']) && ((float) $d['latitude'] < -90 || (float) $d['latitude'] > 90)) {
+                    $d['latitude'] = null;
+                }
+                if (isset($d['longitude']) && ((float) $d['longitude'] < -180 || (float) $d['longitude'] > 180)) {
+                    $d['longitude'] = null;
+                }
+                if (isset($d['sarapan']) && ! in_array($d['sarapan'], ['Tidak', 'Ya', 'All-in'], true)) {
+                    $d['sarapan'] = 'Tidak';
+                }
+                $d['sarapan'] = $d['sarapan'] ?? 'Tidak';
+
+                $ada = null;
+                if (! empty($d['slug'])) {
+                    $ada = $m->where('slug', $d['slug'])->first();
+                }
+                if (! $ada && ! empty($d['nama'])) {
+                    $ada = $m->where('LOWER(TRIM(nama))', strtolower(trim($d['nama'])))->first();
+                }
+
+                if ($ada) {
+                    $updateData = [];
+                    foreach ($d as $col => $val) {
+                        if ($val !== null && $val !== '') {
+                            $updateData[$col] = $val;
+                        }
+                    }
+                    if (! empty($updateData)) {
+                        $m->update($ada['id'], $updateData);
+                    }
+                    $ubah++;
+                } else {
+                    $d['peringkat']          = $d['peringkat'] ?? ++$maks;
+                    $maks                    = max($maks, (int) $d['peringkat']);
+                    $d['slug']               = $this->slugUnik($d['nama'], (int) $d['peringkat'], $d['slug'] ?? null);
+                    $d['rating_awal']        = $d['rating'] ?? null;
+                    $d['jumlah_ulasan_awal'] = (int) ($d['jumlah_ulasan'] ?? 0);
+                    $m->insert($d);
+                    $baru++;
+                }
             }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                fclose($fh);
+
+                return redirect()->back()->with('error', 'Impor CSV gagal karena kesalahan database. Seluruh perubahan dibatalkan.');
+            }
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            fclose($fh);
+            log_message('error', 'Admin\Hotels::impor gagal: {msg}', ['msg' => $e->getMessage()]);
+
+            return redirect()->back()->with('error', 'Impor CSV gagal: periksa format data CSV Anda.');
         }
+
         fclose($fh);
+        HotelModel::hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', "Impor selesai: {$baru} baru, {$ubah} diperbarui, {$lewat} dilewati.");
     }

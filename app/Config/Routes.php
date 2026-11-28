@@ -21,9 +21,9 @@ $routes->get('bandingkan/(:any)', static function () {
 });
 
 // ---- Akun ----
-$routes->match(['get', 'post'], 'masuk', 'Auth::masuk');
-$routes->match(['get', 'post'], 'daftar', 'Auth::daftar');
-$routes->match(['get', 'post'], 'lupa-sandi', 'Auth::lupa');
+$routes->match(['GET', 'POST'], 'masuk', 'Auth::masuk');
+$routes->match(['GET', 'POST'], 'daftar', 'Auth::daftar');
+$routes->match(['GET', 'POST'], 'lupa-sandi', 'Auth::lupa');
 $routes->get('keluar', 'Auth::keluar');
 $routes->get('akun', 'Akun::index');
 $routes->post('akun/update', 'Akun::update');
@@ -43,11 +43,11 @@ $routes->post('notifikasi/baca', 'Interaksi::bacaNotifikasi');
 
 // ---- Admin ----
 $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], static function (RouteCollection $routes) {
-    $routes->match(['get', 'post'], '/', 'Dashboard::index');
+    $routes->match(['GET', 'POST'], '/', 'Dashboard::index');
 
     $routes->get('hotel', 'Hotels::index');
     $routes->get('hotel/baru', 'Hotels::baru');
-    $routes->match(['get', 'post'], 'hotel/impor', 'Hotels::impor');
+    $routes->match(['GET', 'POST'], 'hotel/impor', 'Hotels::impor');
     $routes->post('hotel/simpan', 'Hotels::simpan');
     $routes->get('hotel/(:num)/ubah', 'Hotels::ubah/$1');
     $routes->post('hotel/(:num)/hapus', 'Hotels::hapus/$1');

@@ -77,10 +77,13 @@ class Akun extends AppBase
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
-        // Ganti password jika diisi
+        // Ganti password jika diisi (samakan aturan dengan registrasi: 8-72 karakter, huruf + angka)
         if ($pwBaru !== '') {
-            if (strlen($pwBaru) < 6) {
-                return redirect()->back()->withInput()->with('error', 'Password baru minimal 6 karakter.');
+            if (strlen($pwBaru) < 8 || strlen($pwBaru) > 72) {
+                return redirect()->back()->withInput()->with('error', 'Password baru harus 8–72 karakter.');
+            }
+            if (! preg_match('/^(?=.*[A-Za-z])(?=.*\d).+$/', $pwBaru)) {
+                return redirect()->back()->withInput()->with('error', 'Password baru harus mengandung huruf dan angka.');
             }
             if ($pwBaru !== $pwKonf) {
                 return redirect()->back()->withInput()->with('error', 'Konfirmasi password baru tidak cocok.');

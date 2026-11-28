@@ -108,16 +108,18 @@ class Hotels extends ApiBase
         $slug     = $slugBase . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
 
         $data = [
-            'peringkat'     => isset($in['peringkat']) && is_numeric($in['peringkat']) ? (int) $in['peringkat'] : ($max + 1),
-            'nama'          => $nama,
-            'slug'          => $slug,
-            'kecamatan'     => $kecamatan,
-            'alamat'        => $alamat !== '' ? $alamat : null,
-            'sarapan'       => $sarapan,
-            'latitude'      => $lat !== null ? (float) $lat : null,
-            'longitude'     => $lng !== null ? (float) $lng : null,
-            'foto'          => ($foto !== '' && preg_match('#^https?://#i', $foto)) ? $foto : null,
-            'jumlah_ulasan' => 0,
+            'peringkat'          => isset($in['peringkat']) && is_numeric($in['peringkat']) ? (int) $in['peringkat'] : ($max + 1),
+            'nama'               => $nama,
+            'slug'               => $slug,
+            'kecamatan'          => $kecamatan,
+            'alamat'             => $alamat !== '' ? $alamat : null,
+            'sarapan'            => $sarapan,
+            'latitude'           => $lat !== null ? (float) $lat : null,
+            'longitude'          => $lng !== null ? (float) $lng : null,
+            'foto'               => ($foto !== '' && preg_match('#^https?://#i', $foto)) ? $foto : null,
+            'rating_awal'        => null,
+            'jumlah_ulasan_awal' => 0,
+            'jumlah_ulasan'      => 0,
         ];
 
         $db->transBegin();
@@ -136,7 +138,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat membuat hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        HotelModel::hapusCache();
         $saved = $m->find($id);
 
         return $this->json([
@@ -232,7 +234,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat memperbarui hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        HotelModel::hapusCache();
 
         return $this->json([
             'status'  => 'ok',
@@ -270,7 +272,7 @@ class Hotels extends ApiBase
             return $this->json(['status' => 'error', 'message' => 'Terjadi kesalahan server saat menghapus hotel.'], 500);
         }
 
-        cache()->delete('stats_hotel');
+        HotelModel::hapusCache();
 
         return $this->json([
             'status'  => 'ok',

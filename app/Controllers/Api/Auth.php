@@ -33,8 +33,8 @@ class Auth extends ApiBase
 
         $u = (new UserModel())
             ->groupStart()
-            ->where('email', $login)
-            ->orWhere('nama', $login)
+            ->where('LOWER(email)', $login)
+            ->orWhere('LOWER(nama)', $login)
             ->groupEnd()
             ->first();
 
