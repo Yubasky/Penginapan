@@ -151,7 +151,7 @@ class Hotels extends AppBase
             $msg = 'Hotel ditambahkan.';
         }
 
-        HotelModel::hapusCache();
+        $m->hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', $msg);
     }
@@ -161,8 +161,9 @@ class Hotels extends AppBase
         if ($r = $this->gerbangAdminPost()) {
             return $r;
         }
-        (new HotelModel())->delete($id);
-        HotelModel::hapusCache();
+        $m = new HotelModel();
+        $m->delete($id);
+        $m->hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', 'Hotel dihapus (beserta ulasan, favorit, dan pesan terkait).');
     }
@@ -203,6 +204,7 @@ class Hotels extends AppBase
         $batas  = ['nama' => 255, 'slug' => 255, 'kecamatan' => 80, 'reviewer' => 150, 'tanggal_ulasan' => 30];
 
         $db->transBegin();
+
         try {
             while (($r = fgetcsv($fh, 0, ',', '"', '')) !== false) {
                 if (count($r) !== count($head)) {
@@ -213,25 +215,24 @@ class Hotels extends AppBase
                 $d   = [];
                 foreach ($kolom as $k) {
                     if (array_key_exists($k, $row)) {
-                        $v = $this->nullable($row[$k]);
-                        if ($v !== null && in_array($k, $angka, true)) {
-                            $v = is_numeric($v) ? $v : null;
-                        } elseif ($v !== null && isset($batas[$k])) {
-                            $v = mb_substr((string) $v, 0, $batas[$k]);
-                        }
-                        $d[$k] = $v;
+                        $v     = $this->nullable($row[$k]);
+                        $d[$k] = ($v !== null && in_array($k, $angka, true) && ! is_numeric($v)) ? null : $v;
                     }
                 }
-                if (empty($d['nama']) || empty($d['alamat'])) {
+                if (empty($d['nama']) || empty($d['alamat']) || mb_strlen($d['nama']) > $batas['nama']) {
                     $lewat++;
                     continue;
                 }
-                // Validasi rentang nilai numerik agar tidak memicu CHECK constraint error
+
+                // Kosongkan nilai numerik yang di luar batas CHECK constraint
                 if (isset($d['rating']) && ((float) $d['rating'] < 0 || (float) $d['rating'] > 5)) {
                     $d['rating'] = null;
                 }
+                if (isset($d['rating_ulasan']) && ((int) $d['rating_ulasan'] < 1 || (int) $d['rating_ulasan'] > 5)) {
+                    $d['rating_ulasan'] = null;
+                }
                 if (isset($d['jumlah_ulasan']) && (int) $d['jumlah_ulasan'] < 0) {
-                    $d['jumlah_ulasan'] = 0;
+                    $d['jumlah_ulasan'] = null;
                 }
                 if (isset($d['latitude']) && ((float) $d['latitude'] < -90 || (float) $d['latitude'] > 90)) {
                     $d['latitude'] = null;
@@ -239,6 +240,14 @@ class Hotels extends AppBase
                 if (isset($d['longitude']) && ((float) $d['longitude'] < -180 || (float) $d['longitude'] > 180)) {
                     $d['longitude'] = null;
                 }
+
+                // Lewati nilai teks opsional yang melebihi panjang kolom VARCHAR
+                foreach ($batas as $col => $maxLen) {
+                    if ($col !== 'nama' && isset($d[$col]) && mb_strlen((string) $d[$col]) > $maxLen) {
+                        $d[$col] = null;
+                    }
+                }
+
                 if (isset($d['sarapan']) && ! in_array($d['sarapan'], ['Tidak', 'Ya', 'All-in'], true)) {
                     $d['sarapan'] = 'Tidak';
                 }
@@ -268,7 +277,7 @@ class Hotels extends AppBase
                     $maks                    = max($maks, (int) $d['peringkat']);
                     $d['slug']               = $this->slugUnik($d['nama'], (int) $d['peringkat'], $d['slug'] ?? null);
                     $d['rating_awal']        = $d['rating'] ?? null;
-                    $d['jumlah_ulasan_awal'] = (int) ($d['jumlah_ulasan'] ?? 0);
+                    $d['jumlah_ulasan_awal'] = $d['jumlah_ulasan'] ?? 0;
                     $m->insert($d);
                     $baru++;
                 }
@@ -278,7 +287,7 @@ class Hotels extends AppBase
                 $db->transRollback();
                 fclose($fh);
 
-                return redirect()->back()->with('error', 'Impor CSV gagal karena kesalahan database. Seluruh perubahan dibatalkan.');
+                return redirect()->back()->with('error', 'Impor CSV dibatalkan karena kesalahan database.');
             }
             $db->transCommit();
         } catch (\Throwable $e) {
@@ -286,11 +295,11 @@ class Hotels extends AppBase
             fclose($fh);
             log_message('error', 'Admin\Hotels::impor gagal: {msg}', ['msg' => $e->getMessage()]);
 
-            return redirect()->back()->with('error', 'Impor CSV gagal: periksa format data CSV Anda.');
+            return redirect()->back()->with('error', 'Impor CSV gagal dan seluruh perubahan dibatalkan.');
         }
 
         fclose($fh);
-        HotelModel::hapusCache();
+        $m->hapusCache();
 
         return redirect()->to(site_url('admin/hotel'))->with('ok', "Impor selesai: {$baru} baru, {$ubah} diperbarui, {$lewat} dilewati.");
     }

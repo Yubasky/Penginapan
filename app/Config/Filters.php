@@ -34,6 +34,8 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+        'auth'          => \App\Filters\AuthFilter::class,
+        'admin'         => \App\Filters\AdminFilter::class,
     ];
 
     /**
@@ -106,5 +108,37 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        'auth' => [
+            'before' => [
+                'akun',
+                'akun/*',
+                'favorit/*',
+                'penginapan/*/ulasan',
+                'penginapan/*/ulasan/hapus',
+                'tanya/*/edit',
+                'tanya/*/hapus',
+                'tanya/*/jawab',
+                'tanya/*/jawab/*',
+                'notifikasi/baca',
+            ],
+        ],
+        'admin' => [
+            'before' => [
+                'admin/hotel',
+                'admin/hotel/*',
+                'admin/pesan',
+                'admin/pesan/*',
+                'admin/ulasan',
+                'admin/ulasan/*',
+                'admin/pengguna',
+                'admin/pengguna/*',
+                'admin/apikey',
+                'admin/apikey/*',
+                'admin/kuliner',
+                'admin/kuliner/*',
+                'admin/laporan/*',
+            ],
+        ],
+    ];
 }

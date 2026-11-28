@@ -8,6 +8,10 @@ class HotelSeeder extends Seeder
 {
     public function run()
     {
+        if ($this->db->table('hotels')->countAllResults() > 0) {
+            return;
+        }
+
         $fh = fopen(ROOTPATH . 'data/hotels.csv', 'r');
         if (! $fh) {
             throw new \RuntimeException('data/hotels.csv tidak ditemukan');
@@ -19,14 +23,16 @@ class HotelSeeder extends Seeder
             foreach ($row as $k => $v) {
                 $row[$k] = $v === '' ? null : $v;
             }
-            $row['sarapan']    = $row['sarapan'] ?? 'Tidak';
-            $row['created_at'] = date('Y-m-d H:i:s');
-            $rows[]            = $row;
+            $row['sarapan']            = $row['sarapan'] ?? 'Tidak';
+            $row['rating_awal']        = $row['rating'] ?? null;
+            $row['jumlah_ulasan_awal'] = $row['jumlah_ulasan'] ?? 0;
+            $row['created_at']         = date('Y-m-d H:i:s');
+            $rows[]                    = $row;
         }
         fclose($fh);
 
-        // PostgreSQL membutuhkan CASCADE saat TRUNCATE tabel yang direferensikan FK
-        $this->db->query('TRUNCATE TABLE hotels RESTART IDENTITY CASCADE');
-        $this->db->table('hotels')->insertBatch($rows);
+        if (! empty($rows)) {
+            $this->db->table('hotels')->insertBatch($rows);
+        }
     }
 }

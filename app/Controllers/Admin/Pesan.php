@@ -37,42 +37,51 @@ class Pesan extends AppBase
         $s       = (string) $this->request->getPost('status');
         $balasan = trim((string) $this->request->getPost('balasan_admin'));
 
-        $data = [];
-        if (in_array($s, ['baru', 'diproses', 'selesai'], true)) {
-            $data['status'] = $s;
-        }
-
-        $db = db_connect();
+        $db   = db_connect();
+        $mInq = new InquiryModel();
         $db->transBegin();
+
         try {
-            $locked = $db->query('SELECT id, jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$id])->getRowArray();
-            if ($locked && $this->request->getPost('balasan_admin') !== null) {
+            $data = [];
+            if (in_array($s, ['baru', 'diproses', 'selesai'], true)) {
+                $data['status'] = $s;
+            }
+            if ($this->request->getPost('balasan_admin') !== null) {
                 $data['balasan_admin'] = $balasan !== '' ? $balasan : null;
                 $data['dibalas_at']    = $balasan !== '' ? date('Y-m-d H:i:s') : null;
 
                 if ($balasan !== '') {
-                    $jawaban   = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
-                    $jawaban[] = [
-                        'id'         => bin2hex(random_bytes(6)),
-                        'user_id'    => session('user')['id'] ?? null,
-                        'nama'       => session('user')['nama'] ?? 'Admin Pengelola',
-                        'role'       => 'admin',
-                        'isi'        => $balasan,
-                        'created_at' => date('Y-m-d H:i:s'),
-                    ];
-                    $data['jawaban'] = json_encode($jawaban);
+                    $inq = $mInq->findForUpdate($id);
+                    if ($inq) {
+                        $jawaban   = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
+                        $jawaban[] = [
+                            'id'         => bin2hex(random_bytes(6)),
+                            'user_id'    => session('user')['id'] ?? null,
+                            'nama'       => session('user')['nama'] ?? 'Admin Pengelola',
+                            'role'       => 'admin',
+                            'isi'        => $balasan,
+                            'created_at' => date('Y-m-d H:i:s'),
+                        ];
+                        $data['jawaban'] = json_encode($jawaban);
+                    }
                 }
             }
 
             if ($data) {
-                (new InquiryModel())->update($id, $data);
+                $mInq->update($id, $data);
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->back()->with('error', 'Gagal memperbarui pesan.');
             }
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
             log_message('error', 'Admin\Pesan::status gagal: {msg}', ['msg' => $e->getMessage()]);
 
-            return redirect()->back()->with('error', 'Gagal memperbarui pesan.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan balasan.');
         }
 
         return redirect()->back()->with('ok', 'Pesan dan status berhasil diperbarui.');

@@ -4,6 +4,7 @@ namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
 use App\Libraries\JwtHelper;
+use App\Libraries\SupabaseAuth;
 use App\Models\ApiKeyModel;
 use App\Models\UserModel;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -82,7 +83,33 @@ abstract class ApiBase extends BaseController
             return null;
         }
 
-        // 2. Cek Bearer JWT Token hasil /api/v1/auth/login
+        // 2. Cek Bearer JWT Token dari Supabase Auth (/auth/v1/user) bila aktif
+        $supaKey = trim((string) env('supabase.key', env('SUPABASE_PUBLISHABLE_KEY', env('SUPABASE_ANON_KEY', ''))));
+        if ($supaKey !== '' && $supaKey !== 'ISI_PUBLISHABLE_OR_ANON_KEY_ANDA') {
+            $supa = new SupabaseAuth();
+            if ($supa->enabled()) {
+                $res = $supa->getUser($token);
+                if ($res['ok'] && ! empty($res['data']['id'])) {
+                    $su        = $res['data'];
+                    $email     = (string) ($su['email'] ?? '');
+                    $localUser = $email !== '' ? (new UserModel())->select('id, nama, email, role')->where('email', $email)->first() : null;
+                    $role      = SupabaseAuth::extractRole($su);
+
+                    $this->authActor = [
+                        'type'         => 'user',
+                        'id'           => $localUser ? (int) $localUser['id'] : null,
+                        'auth_user_id' => (string) $su['id'],
+                        'nama'         => (string) ($localUser['nama'] ?? ($su['user_metadata']['nama'] ?? $email)),
+                        'email'        => $email,
+                        'role'         => $role !== 'user' ? $role : (string) ($localUser['role'] ?? 'user'),
+                    ];
+
+                    return null;
+                }
+            }
+        }
+
+        // 3. Fallback: Cek Bearer JWT Token lokal hasil /api/v1/auth/login
         $payload = JwtHelper::decode($token);
         if (! $payload || empty($payload['sub'])) {
             return $this->json(['status' => 'error', 'message' => 'Token tidak valid atau sudah kedaluwarsa.'], 401);

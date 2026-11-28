@@ -172,11 +172,10 @@ class HotelModel extends Model
             'rating'        => $finalRating,
             'jumlah_ulasan' => $totalCount,
         ]);
-
-        self::hapusCache();
+        $this->hapusCache();
     }
 
-    /** Hapus seluruh cache ringkasan hotel agar perubahan admin/rating langsung tampil. */
+    /** Bersihkan cache statistik, daftar kecamatan, dan total koordinat hotel. */
     public static function hapusCache(): void
     {
         $cache = cache();

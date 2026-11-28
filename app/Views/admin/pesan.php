@@ -17,8 +17,12 @@
     <div class="panel msg" style="margin-bottom:1.2rem">
         <div class="msg__top">
             <div>
-                <strong><?= esc($p['nama']) ?></strong>
-                <?php if (! empty($p['email'])): ?> · <a class="link" href="mailto:<?= esc($p['email'], 'attr') ?>"><?= esc($p['email']) ?></a><?php endif; ?>
+                <strong><?= esc($p['nama']) ?></strong> · 
+                <?php if (! empty($p['email'])): ?>
+                    <a class="link" href="mailto:<?= esc($p['email'], 'attr') ?>"><?= esc($p['email']) ?></a>
+                <?php else: ?>
+                    <span class="muted">tanpa email</span>
+                <?php endif; ?>
                 <?= $p['telepon'] ? ' · ' . esc($p['telepon']) : '' ?>
                 <div class="small">
                     Tujuan: <a class="link" href="<?= site_url('penginapan/' . $p['hotel_slug']) ?>" target="_blank"><strong><?= esc($p['hotel_nama']) ?></strong></a> · <?= tgl_id($p['created_at']) ?>

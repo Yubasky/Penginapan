@@ -140,7 +140,7 @@ class Interaksi extends AppBase
         return redirect()->to(site_url('penginapan/' . $hotel['slug']) . '#ulasan')->with('ok', 'Ulasanmu berhasil dihapus.');
     }
 
-    /** Tanya seputar hotel (Q&A Publik). */
+    /** Tanya seputar hotel (Q&A Publik — mendukung tamu maupun user login). */
     public function tanya(int $id)
     {
         if ($r = $this->gerbangPost(false)) {
@@ -172,7 +172,7 @@ class Interaksi extends AppBase
 
         (new InquiryModel())->insert([
             'hotel_id' => $id,
-            'user_id'  => $u['id'] ?? null,
+            'user_id'  => $u ? (int) $u['id'] : null,
             'nama'     => $nama,
             'email'    => $email,
             'pesan'    => trim((string) $this->request->getPost('pertanyaan')),
@@ -213,14 +213,13 @@ class Interaksi extends AppBase
         $db->transBegin();
 
         try {
-            $locked = $db->query('SELECT jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
+            $locked = $m->findForUpdate($inquiryId);
             if (! $locked) {
                 $db->transRollback();
-
-                return redirect()->to($balik)->with('error', 'Pertanyaan tidak ditemukan.');
+                throw PageNotFoundException::forPageNotFound();
             }
-            $list = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
 
+            $list   = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
             $list[] = [
                 'id'         => bin2hex(random_bytes(6)),
                 'user_id'    => (int) $u['id'],
@@ -238,12 +237,19 @@ class Interaksi extends AppBase
             }
 
             $m->update($inquiryId, $updateData);
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->to($balik)->with('error', 'Gagal menyimpan jawaban.');
+            }
             $db->transCommit();
+        } catch (PageNotFoundException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             $db->transRollback();
             log_message('error', 'Interaksi::jawab gagal: {msg}', ['msg' => $e->getMessage()]);
 
-            return redirect()->to($balik)->with('error', 'Gagal menyimpan jawaban.');
+            return redirect()->to($balik)->with('error', 'Terjadi kesalahan saat mengirim jawaban.');
         }
 
         return redirect()->to($balik)->with('ok', 'Jawaban berhasil dikirim.');
@@ -372,10 +378,14 @@ class Interaksi extends AppBase
         $db->transBegin();
 
         try {
-            $locked = $db->query('SELECT jawaban, balasan_admin, dibalas_at, updated_at FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
-            $fresh  = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
+            $locked = $m->findForUpdate($inquiryId);
+            if (! $locked) {
+                $db->transRollback();
 
-            $idx = -1;
+                return redirect()->back()->with('error', 'Pertanyaan tidak ditemukan.');
+            }
+            $fresh = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
+            $idx   = -1;
             foreach ($fresh as $i => $ans) {
                 if (($ans['id'] ?? '') === $answerId) {
                     $idx = $i;
@@ -409,12 +419,17 @@ class Interaksi extends AppBase
             }
 
             $m->update($inquiryId, $updateData);
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->back()->with('error', 'Gagal memperbarui jawaban.');
+            }
             $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
             log_message('error', 'Interaksi::editJawaban gagal: {msg}', ['msg' => $e->getMessage()]);
 
-            return redirect()->back()->with('error', 'Gagal memperbarui jawaban.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui jawaban.');
         }
 
         return redirect()->back()->with('ok', 'Jawaban berhasil diperbarui.');
@@ -426,20 +441,19 @@ class Interaksi extends AppBase
         if ($r = $this->gerbangPost()) {
             return $r;
         }
-        $m   = new InquiryModel();
-        $inq = $m->find($inquiryId);
-        if (! $inq) {
-            throw PageNotFoundException::forPageNotFound();
-        }
-
+        $m       = new InquiryModel();
         $u       = $this->user();
         $isAdmin = ($u['role'] ?? '') === 'admin';
-        $list    = json_decode($inq['jawaban'] ?? '[]', true) ?: [];
-
-        $db = db_connect();
+        $db      = db_connect();
         $db->transBegin();
+
         try {
-            $locked      = $db->query('SELECT jawaban FROM inquiries WHERE id = ? FOR UPDATE', [$inquiryId])->getRowArray();
+            $locked = $m->findForUpdate($inquiryId);
+            if (! $locked) {
+                $db->transRollback();
+                throw PageNotFoundException::forPageNotFound();
+            }
+
             $fresh       = json_decode($locked['jawaban'] ?? '[]', true) ?: [];
             $newList     = [];
             $deleted     = false;
@@ -481,12 +495,19 @@ class Interaksi extends AppBase
             }
 
             $m->update($inquiryId, $updateData);
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+
+                return redirect()->back()->with('error', 'Gagal menghapus jawaban.');
+            }
             $db->transCommit();
+        } catch (PageNotFoundException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             $db->transRollback();
             log_message('error', 'Interaksi::hapusJawaban gagal: {msg}', ['msg' => $e->getMessage()]);
 
-            return redirect()->back()->with('error', 'Gagal menghapus jawaban.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus jawaban.');
         }
 
         return redirect()->back()->with('ok', 'Jawaban berhasil dihapus.');

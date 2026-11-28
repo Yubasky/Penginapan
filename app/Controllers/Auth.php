@@ -2,14 +2,33 @@
 
 namespace App\Controllers;
 
+use App\Libraries\SupabaseAuth;
 use App\Models\UserModel;
 
 class Auth extends AppBase
 {
-    private function masukkan(array $u)
+    private function supabaseAktif(): bool
+    {
+        $key = trim((string) env('supabase.key', env('SUPABASE_PUBLISHABLE_KEY', env('SUPABASE_ANON_KEY', ''))));
+
+        return $key !== '' && $key !== 'ISI_PUBLISHABLE_OR_ANON_KEY_ANDA' && (new SupabaseAuth())->enabled();
+    }
+
+    private function masukkan(array $u, ?array $supaSession = null)
     {
         session()->regenerate();
-        session()->set('user', ['id' => (int) $u['id'], 'nama' => $u['nama'], 'email' => $u['email'], 'role' => $u['role']]);
+        session()->set('user', [
+            'id'           => $u['id'],
+            'auth_user_id' => $u['auth_user_id'] ?? null,
+            'nama'         => $u['nama'],
+            'email'        => $u['email'],
+            'role'         => $u['role'],
+        ]);
+        if ($supaSession !== null) {
+            session()->set('supabase_access_token', $supaSession['access_token'] ?? '');
+            session()->set('supabase_refresh_token', $supaSession['refresh_token'] ?? '');
+            session()->set('supabase_expires_at', time() + (int) ($supaSession['expires_in'] ?? 3600));
+        }
         $kembali = (string) session()->get('kembali');
         session()->remove('kembali');
         if ($kembali === '' || ! str_starts_with($kembali, base_url())) {
@@ -28,12 +47,41 @@ class Auth extends AppBase
             if (! $this->tokenOk()) {
                 return redirect()->back()->with('error', 'Sesi form kedaluwarsa, coba lagi.');
             }
-            $login = strtolower(trim((string) $this->request->getPost('email')));
-            $u     = (new UserModel())->groupStart()
-                ->where('LOWER(email)', $login)
-                ->orWhere('LOWER(nama)', $login)
-                ->groupEnd()->first();
-            if (! $u || ! password_verify((string) $this->request->getPost('password'), $u['password_hash'])) {
+            $login    = strtolower(trim((string) $this->request->getPost('email')));
+            $password = (string) $this->request->getPost('password');
+
+            if ($this->supabaseAktif() && filter_var($login, FILTER_VALIDATE_EMAIL)) {
+                $supa = new SupabaseAuth();
+                $res  = $supa->signInWithPassword($login, $password);
+                if ($res['ok'] && ! empty($res['data']['user'])) {
+                    $su       = $res['data']['user'];
+                    $supaUid  = (string) ($su['id'] ?? '');
+                    $supaRole = SupabaseAuth::extractRole($su);
+                    $nama     = (string) ($su['user_metadata']['nama'] ?? explode('@', $login)[0]);
+
+                    $localUser = (new UserModel())->where('email', $login)->first();
+                    $u         = [
+                        'id'           => $localUser['id'] ?? $supaUid,
+                        'auth_user_id' => $supaUid,
+                        'nama'         => $localUser['nama'] ?? $nama,
+                        'email'        => $login,
+                        'role'         => $supaRole !== 'user' ? $supaRole : ($localUser['role'] ?? 'user'),
+                    ];
+
+                    return $this->masukkan($u, $res['data']);
+                }
+
+                // Fallback ke user lokal bila belum dimigrasi ke auth.users
+                $u = (new UserModel())->findByLogin($login);
+                if (! $u || ! password_verify($password, $u['password_hash'])) {
+                    return redirect()->back()->withInput()->with('error', $res['error'] ?? 'Email atau password salah.');
+                }
+
+                return $this->masukkan($u);
+            }
+
+            $u = (new UserModel())->findByLogin($login);
+            if (! $u || ! password_verify($password, $u['password_hash'])) {
                 return redirect()->back()->withInput()->with('error', 'Email/username atau password salah.');
             }
 
@@ -52,7 +100,7 @@ class Auth extends AppBase
             if (! $this->tokenOk()) {
                 return redirect()->back()->with('error', 'Sesi form kedaluwarsa, coba lagi.');
             }
-            // Samakan format nomor HP (+62812... / 62812... / 0812... -> 0812...) sebelum validasi & is_unique
+            // Rapikan & seragamkan nomor HP ke format 08... sebelum validasi is_unique
             $noHp = $this->normHp((string) $this->request->getPost('no_hp'));
             $data = [
                 'nama'          => trim((string) $this->request->getPost('nama')),
@@ -97,6 +145,24 @@ class Auth extends AppBase
                     return redirect()->back()->withInput()->with('error', 'Tanggal lahir tidak valid (usia minimal 13 tahun).');
                 }
             }
+            $supaSession = null;
+            $supaUid     = null;
+            if ($this->supabaseAktif()) {
+                $supa = new SupabaseAuth();
+                $res  = $supa->signUp($data['email'], $data['password'], [
+                    'nama'          => $data['nama'],
+                    'no_hp'         => $data['no_hp'],
+                    'jenis_kelamin' => $data['jenis_kelamin'] ?: null,
+                    'tanggal_lahir' => $data['tanggal_lahir'] ?: null,
+                    'kota_asal'     => $data['kota_asal'] ?: null,
+                ]);
+                if (! $res['ok']) {
+                    return redirect()->back()->withInput()->with('error', $res['error'] ?? 'Pendaftaran ke Supabase Auth gagal.');
+                }
+                $supaUid     = $res['data']['user']['id'] ?? ($res['data']['id'] ?? null);
+                $supaSession = ! empty($res['data']['access_token']) ? $res['data'] : null;
+            }
+
             $m  = new UserModel();
             $id = $m->insert([
                 'nama'          => $data['nama'],
@@ -109,7 +175,14 @@ class Auth extends AppBase
                 'role'          => 'user',
             ]);
 
-            return $this->masukkan($m->find($id));
+            if ($this->supabaseAktif() && $supaSession === null) {
+                return redirect()->to(site_url('masuk'))->with('ok', 'Pendaftaran berhasil! Silakan cek email untuk verifikasi akun sebelum masuk.');
+            }
+
+            $userRow                 = $m->find($id);
+            $userRow['auth_user_id'] = $supaUid;
+
+            return $this->masukkan($userRow, $supaSession);
         }
 
         return view('auth/daftar', ['title' => 'Daftar — Singgah Medan']);
@@ -184,7 +257,12 @@ class Auth extends AppBase
 
     public function keluar()
     {
-        session()->remove('user');
+        $accessToken = (string) session('supabase_access_token');
+        if ($accessToken !== '' && $this->supabaseAktif()) {
+            (new SupabaseAuth())->signOut($accessToken);
+        }
+
+        session()->remove(['user', 'supabase_access_token', 'supabase_refresh_token', 'supabase_expires_at']);
         session()->regenerate(true);
         session()->setFlashdata('logout_popup', true);
 
