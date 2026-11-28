@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://localhost:8080/';
+    public string $baseURL = 'https://snooze-study-gravy.ngrok-free.dev/';
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -29,7 +29,22 @@ class App extends BaseConfig
      *
      * @var list<string>
      */
-    public array $allowedHostnames = [];
+    public array $allowedHostnames = ['snooze-study-gravy.ngrok-free.dev', 'localhost', '127.0.0.1'];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Saat diakses langsung di komputer lokal (tanpa reverse proxy ngrok),
+        // sesuaikan baseURL ke localhost/127.0.0.1 agar testing lokal tetap berjalan mulus.
+        if (PHP_SAPI !== 'cli' && empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+            $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+            if (preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/i', $host)) {
+                $scheme        = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $this->baseURL = $scheme . '://' . $host . '/';
+            }
+        }
+    }
 
     /**
      * --------------------------------------------------------------------------
@@ -180,7 +195,10 @@ class App extends BaseConfig
      *
      * @var array<string, string>
      */
-    public array $proxyIPs = [];
+    public array $proxyIPs = [
+        '127.0.0.1' => 'X-Forwarded-For',
+        '::1'       => 'X-Forwarded-For',
+    ];
 
     /**
      * --------------------------------------------------------------------------

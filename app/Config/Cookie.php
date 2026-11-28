@@ -56,6 +56,21 @@ class Cookie extends BaseConfig
      */
     public bool $secure = false;
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Aktifkan atribut Secure cookie otomatis saat diakses lewat HTTPS
+        // (termasuk lewat reverse proxy lokal seperti ngrok).
+        $httpsDirect = ! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $fromLocal   = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
+        $httpsProxy  = $fromLocal && strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+
+        if ($httpsDirect || $httpsProxy) {
+            $this->secure = true;
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Cookie HTTPOnly
